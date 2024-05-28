@@ -41,7 +41,7 @@
 !!        The Microstructure, Multiscale, Mechanistic, Marine Aggregates
 !!        in the Global Ocean (M4AGO) sinking scheme
 !!
-!! The mo_m4ao_physics module contains routines to calculate:
+!! The mo_m4ago_physics module contains routines to calculate:
 !!      - molecular dynamic viscosity
 !!
 !! See:
@@ -90,7 +90,7 @@ contains
     real, intent(in) :: ptho_val  ! temperature [deg C]
     real, intent(in) :: psao_val  ! salinity [psu]
 
-    mol_dyn_vis = 0.1 & ! Unit: g / (cm*s) -> kg / (m*s)
+    mol_dyn_vis = 0.1 & ! Unit conversion: g / (cm*s) -> kg / (m*s)
                       &     *(1.79e-2                                                         &
                       &     - 6.1299e-4*ptho_val + 1.4467e-5*ptho_val**2.                     &
                       &     - 1.6826e-7*ptho_val**3.                                          &
