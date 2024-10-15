@@ -413,7 +413,7 @@ contains
     real        :: nu_vis
 
     nu_vis  =  mu/rho_aq
-    max_agg_diam_white = (aggs%Re_crit_agg*nu_vis)**((2. - BJ3)/aggs%df_agg)                            &
+    max_agg_diam_white = (aggs%Re_crit_agg*nu_vis)**((2. - BJ3)/aggs%df_agg)                       &
                         & /((4./3.)*(aggs%av_rho_p - rho_aq)/rho_aq                                &
                         & *aggs%av_dp**(3. - aggs%df_agg)*grav_acc_const                           &
                         & /(AJ3*nu_vis**BJ3))**(1./aggs%df_agg)
@@ -434,7 +434,7 @@ contains
                             & *(4.-aggs%b_agg)*(aggs%dmax_agg**(1.+aggs%df_agg-aggs%b_agg)         &
                             &                  - aggs%av_dp**(1.+aggs%df_agg-aggs%b_agg))          &
                             &  / ((1.+aggs%df_agg-aggs%b_agg)                                      &
-                            & *(aggs%dmax_agg**(4.-aggs%b_agg) - aggs%av_dp**(4.-aggs%b_agg)))      &
+                            & *(aggs%dmax_agg**(4.-aggs%b_agg) - aggs%av_dp**(4.-aggs%b_agg)))     &
                             & + rho_aq
 
   end function volweighted_agg_density

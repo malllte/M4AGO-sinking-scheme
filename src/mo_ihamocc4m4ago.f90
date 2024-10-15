@@ -427,7 +427,7 @@ contains
     V_dust  = n_dust*V_dp_dust*NUM_FAC
 
     ! calc frustule stickiness
-    stickiness_frustule = cell_det_mass/(cell_pot_det_mass +EPS_ONE)*stickiness_TEP           &
+    stickiness_frustule = cell_det_mass/(cell_pot_det_mass +EPS_ONE)*stickiness_TEP                &
                                & + (1. - cell_det_mass/(cell_pot_det_mass + EPS_ONE))              &
                                &   *stickiness_opal
 
