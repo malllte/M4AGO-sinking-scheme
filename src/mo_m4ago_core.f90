@@ -73,6 +73,25 @@ module mo_m4ago_core
 
   private
 
+  type, public :: aggregates
+    integer :: NPrimPartTypes                       ! Number of primary particle types
+    real    :: av_dp                                ! mean primary particle diameter (m)
+    real    :: av_rho_p                             ! mean primary particle density (kg/m3)
+    real    :: df_agg                               ! aggregate fractal dimension - range: agg_df_min-agg_df_max (-)
+    real    :: b_agg                                ! aggregate number distribution slope (-)
+    real    :: dmax_agg                             ! maximum aggregate diameter (m)
+    real    :: stickiness_agg                       ! aggregate stickiness - range : 0-1 (-)
+    real    :: stickiness_frustule                  ! opal frustule stickiness
+    real    :: Re_crit_agg                          ! critical diameter-based particle Reynolds number for fragmentation
+    real    :: ws_aggregates                        ! mean aggregate sinking velocity (m/s)
+    real,dimension(:), allocatable :: dp_pp         ! primary particle diameter of each primary particle type (L)
+    real,dimension(:), allocatable :: rho_pp        ! primary particle density of each primary particle type (M/L^3)
+    real,dimension(:), allocatable :: stickiness_pp ! stickiness of each primary particle type (-)
+    real,dimension(:), allocatable :: n_pp          ! total number of each primary particle type (#/L^3)
+    real,dimension(:), allocatable :: A_pp          ! surface area of each primary particle type (L^2/L^3)
+    real,dimension(:), allocatable :: V_pp          ! total volume of each primary particle type (L^3/L^3)
+  end type aggregates
+
   ! Public subroutines & functions
   public :: init_m4ago_core_parameters        ! Initialization of module parameters
   public :: aggregate_properties              ! calculation of aggregate properties from primary particles information
@@ -82,21 +101,13 @@ module mo_m4ago_core
   public :: conc_weighted_mean_agg_diameter   ! mass concentration-weighted mean aggregate diameter (diagnostic)
 
   ! Public values
-  public :: av_dp,av_rho_p,df_agg,b_agg,Lmax_agg,rho_aq,stickiness_agg,ONE_SIXTH,PI,ws_aggregates
+  public :: rho_aq,ONE_SIXTH,PI
 
-  real, protected :: av_dp                             ! mean primary particle diameter
-  real, protected :: av_rho_p                          ! mean primary particle density
-  real, protected :: df_agg                            ! fractal dimesnion of aggregates
-  real, protected :: b_agg                             ! aggregate number distribution slope
-  real, protected :: Lmax_agg                          ! maximum diamater of aggregates
+  ! Core parameters for M4AGO
   real, protected :: agg_Re_crit                       ! critical diameter-based particle Reynolds number for fragmentation
   real, protected :: agg_df_min,agg_df_max             ! minimum and maximum fractal dim of aggregates
   real, protected :: df_slope                          ! slope of df versus stickiness mapping
   real, protected :: stickiness_min,stickiness_max     ! minimum and maximum stickiness of marine aggregates
-  real, protected :: stickiness_agg                    ! mean aggregate stickiness
-  real, protected :: ws_aggregates                     ! mean mass concentration-weighted sinking velocity of aggregates
-
-
   real, parameter :: rho_aq         = 1025.            ! water reference density  (1025 kg/m^3)
   real, parameter :: grav_acc_const = 9.81             ! gravitational acceleration constant
 
@@ -107,7 +118,6 @@ module mo_m4ago_core
   real, parameter :: BJ1 = 1.0
   real, parameter :: BJ2 = 0.871
   real, parameter :: BJ3 = 0.547
-
 
   ! Helping parameters
   real, parameter :: EPS_ONE   = EPSILON(1.)
@@ -140,7 +150,7 @@ contains
   end subroutine init_m4ago_core_parameters
 
   !=================================================================================================
-  subroutine aggregate_properties(Ntypes,dp_pp,rho_pp,n_pp,A_pp,V_pp,stickiness_pp, mu)
+  subroutine aggregate_properties(aggs, mu)
     !>
     !! Calculate aggregate properties from individual primary particle information
     !!
@@ -149,18 +159,11 @@ contains
     !!  - b_agg:          aggregate number distribution slope (-)
     !!  - av_dp:          mean primary particle diameter (m)
     !!  - av_rho_p:       mean primary particle density (kg/m3)
-    !!  - Lmax_agg:       maximum aggregate diameter (m)
+    !!  - dmax_agg:       maximum aggregate diameter (m)
 
     implicit none
-
-    integer,                 intent(in) :: Ntypes        ! Number of individual primary particle types
-    real, dimension(Ntypes), intent(in) :: dp_pp         ! Primary particle diameters (m)
-    real, dimension(Ntypes), intent(in) :: rho_pp        ! Primary particle densities (kg/m3)
-    real, dimension(Ntypes), intent(in) :: n_pp          ! Number of individual primary particles per unit volume (#/m3)
-    real, dimension(Ntypes), intent(in) :: A_pp          ! Total surface area of individual primary particles per unit volume (m2/m3)
-    real, dimension(Ntypes), intent(in) :: V_pp          ! Total volume of individual primary particles per unit volume (m3/m3)
-    real, dimension(Ntypes), intent(in) :: stickiness_pp ! Stickiness of individual primary particles - value range: 0-1 (-)
-    real,                    intent(in) :: mu            ! molecular dynamic viscosity of sea water (kg/(m*s))
+    type(aggregates),intent(inout)      :: aggs
+    real,                    intent(in) :: mu  ! molecular dynamic viscosity of sea water (kg/(m*s))
 
     integer :: ipp
     real    :: stickiness_mapped
@@ -168,27 +171,28 @@ contains
     real    :: V_solid
     real    :: Vdpfrac
 
-    av_dp          = 0.
-    av_rho_p       = 0.
-    stickiness_agg = 0.
+    aggs%av_dp          = 0.
+    aggs%av_rho_p       = 0.
+    aggs%stickiness_agg = 0.
+
     A_total        = 0.
     V_solid        = 0.
     Vdpfrac        = 0.
 
     ! ------ calc mean aggregate stickiness
-    do ipp = 1,Ntypes
-       A_total = A_total + A_pp(ipp)
-       stickiness_agg = stickiness_agg + A_pp(ipp)*stickiness_pp(ipp)
+    do ipp = 1,aggs%NPrimPartTypes
+       A_total = A_total + aggs%A_pp(ipp)
+       aggs%stickiness_agg = aggs%stickiness_agg + aggs%A_pp(ipp)*aggs%stickiness_pp(ipp)
     enddo
-    stickiness_agg = stickiness_agg/(A_total+EPS_ONE)
+    aggs%stickiness_agg = aggs%stickiness_agg/(A_total+EPS_ONE)
 
     ! primary particles surface weighted stickiness is mapped
     ! on range between 0 and 1
-    stickiness_mapped = (stickiness_agg - stickiness_min) / (stickiness_max - stickiness_min)
+    stickiness_mapped = (aggs%stickiness_agg - stickiness_min) / (stickiness_max - stickiness_min)
 
     ! ------ calc fractal dimension
     ! fractal dimension of aggregates is based on that mapped stickiness
-    df_agg = agg_df_max*exp(df_slope*stickiness_mapped)
+    aggs%df_agg = agg_df_max*exp(df_slope*stickiness_mapped)
 
     ! ------ calc the aggregate number distribution slope
     ! number distribution slope b is based on df
@@ -212,31 +216,34 @@ contains
     ! slope = -0.5*(3+df+(2+df-D2)/(2-b)) reduces to:
     !
     ! careful: for df=1.5904: b_agg=2*df where w_s is undefined.
-    b_agg = 0.5*(3. + df_agg + (2. + df_agg - min(2., df_agg))/(2. - BJ2))
+    aggs%b_agg = 0.5*(3. + aggs%df_agg + (2. + aggs%df_agg - min(2., aggs%df_agg))/(2. - BJ2))
 
 
     ! ----- calc primary particle mean diameter and mean density
     ! primary particle mean diameter according to Bushell & Amal 1998, 2000
     ! sum(n_i) not changing - can be pulled out and thus cancels out
-    do ipp = 1,Ntypes
-      av_dp   = av_dp   + n_pp(ipp)*dp_pp(ipp)**3.
-      Vdpfrac = Vdpfrac + n_pp(ipp)*dp_pp(ipp)**df_agg
+    do ipp = 1,aggs%NPrimPartTypes
+      aggs%av_dp   = aggs%av_dp   + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**3.
+      Vdpfrac = Vdpfrac + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**aggs%df_agg
 
-      av_rho_p = av_rho_p + V_pp(ipp)*rho_pp(ipp)
-      V_solid  = V_solid  + V_pp(ipp)
+      aggs%av_rho_p = aggs%av_rho_p + aggs%V_pp(ipp)*aggs%rho_pp(ipp)
+      V_solid  = V_solid  + aggs%V_pp(ipp)
     enddo
-    av_dp    = (av_dp/Vdpfrac)**(1./(3. - df_agg))
-    av_rho_p = av_rho_p/V_solid
-    !    av_dp    = (av_dp/(Vdpfrac+EPS_ONE))**(1./(3. - df_agg))
-    !    av_rho_p = av_rho_p/(V_solid+EPS_ONE)
+    aggs%av_dp    = (aggs%av_dp/Vdpfrac)**(1./(3. - aggs%df_agg))
+    aggs%av_rho_p = aggs%av_rho_p/V_solid
+    !    aggs%av_dp    = (av_dp/(Vdpfrac+EPS_ONE))**(1./(3. - df_agg))
+    !    aggs%av_rho_p = av_rho_p/(V_solid+EPS_ONE)
+
+    ! init Re_crit_agg - with a global value
+    aggs%Re_crit_agg = agg_Re_crit
 
     ! Calculate the maximum aggregate diameter (based on critical particle Reynolds number)
-    call max_agg_diam(mu)
+    call max_agg_diam(aggs,mu)
 
   end subroutine aggregate_properties
 
   !=================================================================================================
-  subroutine ws_Re_approx(mu)
+  subroutine ws_Re_approx(aggs,mu)
     !-----------------------------------------------------------------------
     !>
     !! ws_Re_approx:  distribution integrated to Lmax (Re crit dependent maximum agg size)
@@ -247,14 +254,15 @@ contains
 
     implicit none
 
+    type(aggregates),intent(inout) :: aggs
     real, intent(in) :: mu
 
-    ws_aggregates = ws_Re(Lmax_agg,mu)
+    aggs%ws_aggregates = ws_Re(aggs,mu)
 
   end subroutine ws_Re_approx
 
   !=================================================================================================
-  real function get_dRe(AJ, BJ, Re,mu)
+  real function get_dRe(aggs,AJ, BJ, Re,mu)
     !------------------------------------------------------------------------
     !>
     !! get the diameter of particles that feature a certain particle Reynolds number
@@ -262,6 +270,7 @@ contains
 
     implicit none
     ! Arguments
+    type(aggregates),intent(in) :: aggs
     real, intent(in) :: AJ
     real, intent(in) :: BJ
     real, intent(in) :: Re
@@ -273,19 +282,20 @@ contains
 
     nu_vis =  mu/rho_aq
 
-    get_dRe = (Re*nu_vis)**((2. - BJ)/df_agg)/(4./3.*(av_rho_p - rho_aq)/rho_aq                    &
-           *av_dp**(3. - df_agg)*grav_acc_const/(AJ*nu_vis**(BJ)))**(1./df_agg)
+    get_dRe = (Re*nu_vis)**((2. - BJ)/aggs%df_agg)/(4./3.*(aggs%av_rho_p - rho_aq)/rho_aq          &
+           *aggs%av_dp**(3. - aggs%df_agg)*grav_acc_const/(AJ*nu_vis**(BJ)))**(1./aggs%df_agg)
 
   end function get_dRe
 
   !=================================================================================================
-  real function get_ws_agg_integral(AJ, BJ, lower_bound, upper_bound,mu)
+  real function get_ws_agg_integral(aggs,AJ, BJ, lower_bound, upper_bound,mu)
     !------------------------------------------------------------------------
     !>
     !! Calculate piecewise defined integral
     !!
     implicit none
 
+    type(aggregates),intent(in) :: aggs
     real, intent(in) :: AJ
     real, intent(in) :: BJ
     real, intent(in) :: upper_bound
@@ -296,20 +306,20 @@ contains
     real :: nu_vis
 
     nu_vis =  mu/rho_aq
-    get_ws_agg_integral = (4./3.*(av_rho_p - rho_aq)/rho_aq                                        &
-                        & *av_dp**(3. - df_agg)*grav_acc_const                                     &
+    get_ws_agg_integral = (4./3.*(aggs%av_rho_p - rho_aq)/rho_aq                                   &
+                        & *aggs%av_dp**(3. - aggs%df_agg)*grav_acc_const                           &
                         & /(AJ*nu_vis**BJ))**(1./(2. - BJ))                                        &
-                        & *(upper_bound**(1. - b_agg + df_agg                                      &
-                        & + (BJ + df_agg - 2.)/(2. - BJ))                                          &
-                        & /(1. - b_agg + df_agg + (BJ + df_agg - 2.)/(2. - BJ))                    &
-                        & - lower_bound**(1. - b_agg + df_agg + (BJ + df_agg -2.)                  &
+                        & *(upper_bound**(1. - aggs%b_agg + aggs%df_agg                            &
+                        & + (BJ + aggs%df_agg - 2.)/(2. - BJ))                                     &
+                        & /(1. - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg - 2.)/(2. - BJ))     &
+                        & - lower_bound**(1. - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg -2.)   &
                         & /(2. - BJ))                                                              &
-                        & /(1. - b_agg + df_agg + (BJ + df_agg - 2.)/(2. - BJ)))
+                        & /(1. - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg - 2.)/(2. - BJ)))
 
   end function get_ws_agg_integral
 
   !===================================================================================== ws_Re
-  real function ws_Re(dmax_agg,mu)
+  real function ws_Re(aggs,mu)
     !-----------------------------------------------------------------------
     !>
     !! ws_Re:  distribution integrated to Lmax (Re crit dependent maximum agg size)
@@ -323,87 +333,90 @@ contains
 
     implicit none
 
-    real, intent(in) :: dmax_agg
+    type(aggregates),intent(inout) :: aggs
     real, intent(in) :: mu
 
     ! Local
     real :: d_Re01, d_Re10, d_low, ws_agg_ints
 
-    ! for Re-dependent, it should always be agg_Re_crit>10
+    ! for Re-dependent, it should always be Re_crit_agg>10
     ! for shear-driven break-up, check against integration bounds
     ! calc integration limits for Re-dependent sinking:
     ! Re=0.1
-    d_Re01 = get_dRe(AJ1, BJ1, 0.1,mu)
+    d_Re01 = get_dRe(aggs,AJ1, BJ1, 0.1,mu)
     ! Re=10
-    d_Re10 = get_dRe(AJ2, BJ2, 10.,mu)
-    d_low = av_dp
+    d_Re10 = get_dRe(aggs,AJ2, BJ2, 10.,mu)
+    d_low  = aggs%av_dp
 
     ws_agg_ints = 0.
-    if(dmax_agg >= d_Re01)then ! Re > 0.1
+    if(aggs%dmax_agg >= d_Re01)then ! Re > 0.1
                                        ! - collect full range up to
                                        ! 0.1, (dp->d_Re1) and set lower bound to
                                        ! Re=0.1 val
                                        ! aj=AJ1, bj=1
-        ws_agg_ints = get_ws_agg_integral(AJ1, BJ1, av_dp, d_Re01,mu)
+        ws_agg_ints = get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, d_Re01,mu)
         d_low = d_Re01
     endif
 
-    if(dmax_agg >= d_Re10)then ! Re > 10
+    if(aggs%dmax_agg >= d_Re10)then ! Re > 10
                                          ! - collect full range Re=0.1-10 (d_Re1-> d_Re2)
                                          ! and set lower bound to
                                          ! Re=10 val
                                          ! aj=AJ2, bj=0.871
-        ws_agg_ints = ws_agg_ints  + get_ws_agg_integral(AJ2, BJ2, d_Re01, d_Re10, mu)
+        ws_agg_ints = ws_agg_ints  + get_ws_agg_integral(aggs,AJ2, BJ2, d_Re01, d_Re10, mu)
         d_low = d_Re10
     endif
 
     if(d_low < d_Re01)then ! Re<0.1 and Lmax < d_Re1
-        ws_agg_ints = get_ws_agg_integral(AJ1, BJ1, av_dp, dmax_agg, mu)
+        ws_agg_ints = get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, aggs%dmax_agg, mu)
     else ! Re > 10, aj=AJ3, bj=BJ3
-        ws_agg_ints = ws_agg_ints + get_ws_agg_integral(AJ3, BJ3, d_low, dmax_agg,mu)
+        ws_agg_ints = ws_agg_ints + get_ws_agg_integral(aggs,AJ3, BJ3, d_low, aggs%dmax_agg,mu)
     endif
 
     ! concentration-weighted mean sinking velocity
     ws_Re = (ws_agg_ints                                                                           &
-            & /((dmax_agg**(1. + df_agg - b_agg)                                                   &
-            & - av_dp**(1. + df_agg - b_agg))                                                      &
-            & / (1. + df_agg - b_agg)))  ! (m/s)
+            & /((aggs%dmax_agg**(1. + aggs%df_agg - aggs%b_agg)                                    &
+            & - aggs%av_dp**(1. + aggs%df_agg - aggs%b_agg))                                       &
+            & / (1. + aggs%df_agg - aggs%b_agg)))  ! (m/s)
 
   end function ws_Re
 
 
   !=================================================================================================
-  subroutine max_agg_diam(mu)
+  subroutine max_agg_diam(aggs,mu)
     !-----------------------------------------------------------------------
     !>
     !! max_agg_diam calculates the maximum aggregate diameter of the aggregate
-    !! number distribution, assumes agg_Re_crit > 10
+    !! number distribution, assumes Re_crit_agg > 10
     !!
     real, intent(in)  :: mu                  !< molecular dynamic viscosity
+    type(aggregates),intent(inout) :: aggs
 
     ! base on analytical Jiang approximation
-    Lmax_agg   = max_agg_diam_white(mu)
+    aggs%dmax_agg   = max_agg_diam_white(aggs,mu)
+
   end subroutine max_agg_diam
 
   !================================================ maximum diameter of agg in non-stratified fluid
-  real  function max_agg_diam_white(mu)
+  real  function max_agg_diam_white(aggs,mu)
     !-------------------------------------------------------------------------
     !>
     !! maximum aggregate diameter in a non-stratified fluid - following the
-    !! White drag approaximation by Jiang & Logan 1991, assuming agg_Re_crit > 10
+    !! White drag approaximation by Jiang & Logan 1991, assuming Re_crit_agg > 10
     !! (otherwise AJX,BJX needs to be adjusted)
     !!
 
     implicit none
 
+    type(aggregates),intent(inout) :: aggs
     real,intent(in) :: mu
     real        :: nu_vis
 
     nu_vis  =  mu/rho_aq
-    max_agg_diam_white = (agg_Re_crit*nu_vis)**((2. - BJ3)/df_agg)                                 &
-                        & /((4./3.)*(av_rho_p - rho_aq)/rho_aq                                     &
-                        & *av_dp**(3. - df_agg)*grav_acc_const                                     &
-                        & /(AJ3*nu_vis**BJ3))**(1./df_agg)
+    max_agg_diam_white = (aggs%Re_crit_agg*nu_vis)**((2. - BJ3)/aggs%df_agg)                            &
+                        & /((4./3.)*(aggs%av_rho_p - rho_aq)/rho_aq                                &
+                        & *aggs%av_dp**(3. - aggs%df_agg)*grav_acc_const                           &
+                        & /(AJ3*nu_vis**BJ3))**(1./aggs%df_agg)
 
   end function max_agg_diam_white
 
@@ -412,31 +425,45 @@ contains
   !=================================================================================================
   ! DIAGNOSTICS
 
-  real function volweighted_agg_density()
+  real function volweighted_agg_density(aggs)
+
+    type(aggregates),intent(in) :: aggs
 
     ! Volume-weighted mean aggregate density
-    volweighted_agg_density = (av_rho_p-rho_aq)*av_dp**(3.-df_agg)                                 &
-                            & *(4.-b_agg)*(Lmax_agg**(1.+df_agg-b_agg) - av_dp**(1.+df_agg-b_agg)) &
-                            &  / ((1.+df_agg-b_agg)                                                &
-                            & *(Lmax_agg**(4.-b_agg) - av_dp**(4.-b_agg))) + rho_aq
+    volweighted_agg_density = (aggs%av_rho_p-rho_aq)*aggs%av_dp**(3.-aggs%df_agg)                  &
+                            & *(4.-aggs%b_agg)*(aggs%dmax_agg**(1.+aggs%df_agg-aggs%b_agg)         &
+                            &                  - aggs%av_dp**(1.+aggs%df_agg-aggs%b_agg))          &
+                            &  / ((1.+aggs%df_agg-aggs%b_agg)                                      &
+                            & *(aggs%dmax_agg**(4.-aggs%b_agg) - aggs%av_dp**(4.-aggs%b_agg)))      &
+                            & + rho_aq
 
   end function volweighted_agg_density
 
   !=================================================================================================
-  real function volweighted_agg_porosity()
+  real function volweighted_agg_porosity(aggs)
+
+    type(aggregates),intent(in) :: aggs
 
     ! Volume-weighted mean aggregate porosity
-    volweighted_agg_porosity =  1. - ((4.-b_agg)*av_dp**(3.-df_agg)                                &
-                             &         *(Lmax_agg**(1.+df_agg-b_agg) - av_dp**(1.+df_agg-b_agg)))  &
-                             &       /((1.+df_agg-b_agg)*(Lmax_agg**(4.-b_agg) - av_dp**(4.-b_agg)))
+    volweighted_agg_porosity =  1. - ((4.-aggs%b_agg)*aggs%av_dp**(3.-aggs%df_agg)                 &
+                             &         *(aggs%dmax_agg**(1.+aggs%df_agg-aggs%b_agg)                &
+                             &                        - aggs%av_dp**(1.+aggs%df_agg-aggs%b_agg)))  &
+                             &       /((1.+aggs%df_agg-aggs%b_agg)*(aggs%dmax_agg**(4.-aggs%b_agg) &
+                             &                                      - aggs%av_dp**(4.-aggs%b_agg)))
 
   end function volweighted_agg_porosity
 
   !=================================================================================================
-  real function conc_weighted_mean_agg_diameter()
-    conc_weighted_mean_agg_diameter =  (1. + df_agg - b_agg) / (2. + df_agg - b_agg)               &
-                          & *(Lmax_agg**(2. + df_agg - b_agg) - av_dp**(2. + df_agg - b_agg))      &
-                          & / (Lmax_agg**(1.+df_agg-b_agg) - av_dp**(1. + df_agg-b_agg))
+  real function conc_weighted_mean_agg_diameter(aggs)
+
+    type(aggregates),intent(in) :: aggs
+
+    conc_weighted_mean_agg_diameter =  (1. + aggs%df_agg - aggs%b_agg)                             &
+                          &             / (2. + aggs%df_agg - aggs%b_agg)                          &
+                          & *(aggs%dmax_agg**(2. + aggs%df_agg - aggs%b_agg)                       &
+                          &                    - aggs%av_dp**(2. + aggs%df_agg - aggs%b_agg))      &
+                          & / (aggs%dmax_agg**(1.+aggs%df_agg-aggs%b_agg)                          &
+                          &                    - aggs%av_dp**(1. + aggs%df_agg-aggs%b_agg))
 
   end function conc_weighted_mean_agg_diameter
 
