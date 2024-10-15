@@ -142,6 +142,7 @@ module mo_ihamocc4m4ago
   real, protected :: rho_frustule                             ! density of diatom frustule incl. opal, detritus and water
   real, protected :: rho_diatom                               ! density of either hollow frustule
   real, protected :: stickiness_frustule                      ! stickiness of the diatom frustile as primary particle
+  !$OMP THREADPRIVATE(free_detritus,rho_diatom,cell_det_mass,cell_pot_det_mass,V_POM_cell,V_aq,rho_frustule)
 
   ! Parameters and fields for M4AGO core
   integer, parameter :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
@@ -151,6 +152,8 @@ module mo_ihamocc4m4ago
   real,    protected, dimension(NPrimPartTypes)  :: V_primpart   ! total volume of each primary particle type (L^3/L^3)
   real,    protected, dimension(NPrimPartTypes)  :: A_primpart   ! Surface area of each primary particle type (L^2/L^3)
   real,    protected, dimension(NPrimPartTypes)  :: stickiness_primpart ! Stickiness of each primary particle type (-)
+  !$OMP THREADPRIVATE(dp_primpart,rho_primpart,n_primpart,A_primpart,V_primpart,stickiness_primpart)
+
 
   real,allocatable :: ws_agg(:,:,:)       ! mass concentration-weighted aggregate mean sinking velocity
   real,allocatable :: dyn_vis(:,:,:)      ! molecular dynamic viscosity
@@ -287,6 +290,7 @@ contains
     ! molecular dynamic viscosity
     call dynvis(kpie, kpje, kpke, kbnd, pddpo, omask, ptho, psao, m4ago_ppo)
 
+    !commented: $OMP PARALLEL DO PRIVATE(i,j,k) COPYIN(av_dp,av_rho_p,df_agg,b_agg,Lmax_agg,rho_aq,stickiness_agg,ws_aggregates,dp_primpart,rho_primpart,n_primpart,A_primpart,V_primpart,stickiness_primpart)
     !$OMP PARALLEL DO PRIVATE(i,j,k)
     do j = 1,kpje
       do i = 1,kpie
