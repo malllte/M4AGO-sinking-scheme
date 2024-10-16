@@ -143,6 +143,7 @@ module mo_ihamocc4m4ago
   real(wp), protected :: rho_frustule                             ! density of diatom frustule incl. opal, detritus and water
   real(wp), protected :: rho_diatom                               ! density of either hollow frustule
   real(wp), protected :: stickiness_frustule                      ! stickiness of the diatom frustile as primary particle
+  !$OMP THREADPRIVATE(free_detritus,rho_diatom,cell_det_mass,cell_pot_det_mass,V_POM_cell,V_aq,rho_frustule)
 
   ! Parameters and fields for M4AGO core
   integer, parameter :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
@@ -152,6 +153,7 @@ module mo_ihamocc4m4ago
   real(wp), protected, dimension(NPrimPartTypes)  :: V_primpart   ! total volume of each primary particle type (L^3/L^3)
   real(wp), protected, dimension(NPrimPartTypes)  :: A_primpart   ! Surface area of each primary particle type (L^2/L^3)
   real(wp), protected, dimension(NPrimPartTypes)  :: stickiness_primpart ! Stickiness of each primary particle type (-)
+  !$OMP THREADPRIVATE(dp_primpart,rho_primpart,n_primpart,A_primpart,V_primpart,stickiness_primpart)
 
   real(wp),allocatable :: ws_agg(:,:,:)       ! mass concentration-weighted aggregate mean sinking velocity
   real(wp),allocatable :: dyn_vis(:,:,:)      ! molecular dynamic viscosity
