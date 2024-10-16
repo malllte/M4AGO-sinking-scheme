@@ -78,7 +78,7 @@ module mo_ihamocc4m4ago
 
   ! M4AGO routines:
   use mo_m4ago_kind,    only: wp
-  use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,                                      &
+  use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,                      &
                             & ws_Re_approx,volweighted_agg_density,                                &
                             & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,            &
                             & aggregate_properties, init_m4ago_core_parameters
@@ -267,13 +267,15 @@ contains
     real,    intent(in)  :: prho (kpie,kpje,kpke)                         !< water density [g/cm3]
 
     integer :: i,j,k
-    type(aggregates) :: aggs
+    type(agg_environment) :: agg_env
+    type(aggregates)      :: aggs
     allocate(aggs%dp_pp(NPrimPartTypes))
     allocate(aggs%rho_pp(NPrimPartTypes))
     allocate(aggs%stickiness_pp(NPrimPartTypes))
     allocate(aggs%n_pp(NPrimPartTypes))
     allocate(aggs%A_pp(NPrimPartTypes))
     allocate(aggs%V_pp(NPrimPartTypes))
+
 
     ! get pressure
     call calc_pressure(kpie, kpje, kpke,kbnd, pddpo, omask)
@@ -286,15 +288,16 @@ contains
       do i = 1,kpie
         do k = 1,kpke
           if(pddpo(i,j,k) > dp_min .and. omask(i,j) > 0.5) then
-
+            agg_env%rho_aq = rho_aq
+            agg_env%mu     = dyn_vis(i,j,k)
             ! ------ prepare primary particle information to calculate aggregate properties
-            call prepare_primary_particles(i, j, k,aggs)
+            call prepare_primary_particles(i, j, k,aggs,agg_env)
 
             ! ------ calculate aggregate properties from individual primary particle information
-            call aggregate_properties(aggs, dyn_vis(i,j,k))
+            call aggregate_properties(aggs, agg_env)
 
             ! ======== calculate the mean sinking velocity of aggregates =======
-            call ws_Re_approx(aggs,dyn_vis(i,j,k))
+            call ws_Re_approx(aggs, agg_env)
 
             ! Limit settling velocity wrt CFL:
             ws_agg(i,j,k) = min(aggs%ws_aggregates*dtbgc, 0.99_wp*pddpo(i,j,k)) ! (m/s -> m/d)*dtb
@@ -302,14 +305,14 @@ contains
 
             ! ============================== Write general diagnostics ============
             aggregate_diagnostics(i,j,k,kws_agg)    = ws_agg(i,j,k)/dtb  ! applied ws conversion  m/time_step  to  m/d for output
-            aggregate_diagnostics(i,j,k,kdynvis)    = dyn_vis(i,j,k)     ! dynamic molecular viscosity
+            aggregate_diagnostics(i,j,k,kdynvis)    = agg_env%mu     ! dynamic molecular viscosity
             aggregate_diagnostics(i,j,k,kLmax_agg)  = aggs%dmax_agg      ! applied max. diameter
             aggregate_diagnostics(i,j,k,kav_dp)     = aggs%av_dp         ! mean primary particle diameter
             aggregate_diagnostics(i,j,k,kav_rho_p)  = aggs%av_rho_p      ! mean primary particle density
             aggregate_diagnostics(i,j,k,kdf_agg)    = aggs%df_agg        ! aggregate fractal dim
             aggregate_diagnostics(i,j,k,kb_agg)     = aggs%b_agg         ! aggre number distr. slope
             aggregate_diagnostics(i,j,k,kav_d_C)    = conc_weighted_mean_agg_diameter(aggs) ! conc-weighted mean agg. diameter
-            aggregate_diagnostics(i,j,k,kav_rhof_V) = volweighted_agg_density(aggs)         ! volume-weighted aggregate density
+            aggregate_diagnostics(i,j,k,kav_rhof_V) = volweighted_agg_density(aggs,agg_env) ! volume-weighted aggregate density
             aggregate_diagnostics(i,j,k,kav_por_V)  = volweighted_agg_porosity(aggs)        ! volume-weighted aggregate porosity
             aggregate_diagnostics(i,j,k,kstickiness_agg)      = aggs%stickiness_agg         ! aggre. stickiness
             aggregate_diagnostics(i,j,k,kstickiness_frustule) = aggs%stickiness_frustule    ! frustle stickiness
@@ -320,7 +323,7 @@ contains
   end subroutine ihamocc_mean_aggregate_sinking_speed
 
   !===================================================================================== aggregate_properties
-  subroutine prepare_primary_particles(i, j, k,aggs)
+  subroutine prepare_primary_particles(i, j, k,aggs,agg_env)
     !-----------------------------------------------------------------------
     !>
     !! prepare_primary_particles
@@ -338,7 +341,8 @@ contains
     integer, intent(in)  :: i                  !< 1st real of model grid.
     integer, intent(in)  :: j                  !< 2nd real of model grid.
     integer, intent(in)  :: k                  !< 3rd (vertical) real of model grid.
-    type(aggregates),intent(inout) :: aggs
+    type(aggregates),intent(inout)   :: aggs
+    type(agg_environment),intent(in) :: agg_env
 
     real(wp) :: C_det,C_opal,C_calc,C_dust         ! Concentration of tracers
     real(wp) :: n_det,n_opal,n_calc,n_dust         ! total primary particle number (#)
@@ -405,7 +409,7 @@ contains
     V_aq = V_frustule_inner -  V_POM_cell
 
     ! density of the diatom frsutules incl. opal, detritus and water
-    rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*rho_aq)/V_dp_opal
+    rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*agg_env%rho_aq)/V_dp_opal
 
     ! mass of extra cellular detritus particles
     free_detritus = C_det*det_mol2mass  - cell_det_mass
