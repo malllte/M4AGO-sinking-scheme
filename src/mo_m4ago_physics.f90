@@ -67,6 +67,8 @@
 
 module mo_m4ago_physics
 
+  use mo_m4ago_kind, only: wp
+
   implicit none
 
   private
@@ -86,20 +88,20 @@ contains
     !!
     !! returns: molecular dynamic viscosity [kg/(m*s)]
 
-    real, intent(in) :: press_val ! pressure [dbar]
-    real, intent(in) :: ptho_val  ! temperature [deg C]
-    real, intent(in) :: psao_val  ! salinity [psu]
+    real(wp), intent(in) :: press_val ! pressure [dbar]
+    real(wp), intent(in) :: ptho_val  ! temperature [deg C]
+    real(wp), intent(in) :: psao_val  ! salinity [psu]
 
-    mol_dyn_vis = 0.1 & ! Unit conversion: g / (cm*s) -> kg / (m*s)
-                      &     *(1.79e-2                                                         &
-                      &     - 6.1299e-4*ptho_val + 1.4467e-5*ptho_val**2.                     &
-                      &     - 1.6826e-7*ptho_val**3.                                          &
-                      &     - 1.8266e-7*press_val  + 9.8972e-12*press_val**2.                 &
-                      &     + 2.4727e-5*psao_val                                              &
-                      &     + psao_val*(4.8429e-7*ptho_val - 4.7172e-8*ptho_val**2.           &
-                      &     + 7.5986e-10*ptho_val**3.)                                        &
-                      &     + press_val*(1.3817e-8*ptho_val - 2.6363e-10*ptho_val**2.)        &
-                      &     - press_val**2.*(6.3255e-13*ptho_val - 1.2116e-14*ptho_val**2.))
+    mol_dyn_vis = 0.1_wp & ! Unit conversion: g / (cm*s) -> kg / (m*s)
+                      &     *(1.79e-2_wp                                                           &
+                      &     - 6.1299e-4_wp*ptho_val + 1.4467e-5_wp*ptho_val**2                     &
+                      &     - 1.6826e-7_wp*ptho_val**3                                             &
+                      &     - 1.8266e-7_wp*press_val  + 9.8972e-12_wp*press_val**2                 &
+                      &     + 2.4727e-5_wp*psao_val                                                &
+                      &     + psao_val*(4.8429e-7_wp*ptho_val - 4.7172e-8_wp*ptho_val**2           &
+                      &     + 7.5986e-10_wp*ptho_val**3)                                           &
+                      &     + press_val*(1.3817e-8_wp*ptho_val - 2.6363e-10_wp*ptho_val**2)        &
+                      &     - press_val**2 * (6.3255e-13_wp*ptho_val - 1.2116e-14_wp*ptho_val**2))
 
 
 
