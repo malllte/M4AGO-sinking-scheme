@@ -69,6 +69,8 @@
 
 module mo_m4ago_core
 
+  use mo_m4ago_kind, only: wp
+
   implicit none
 
   private
@@ -104,25 +106,25 @@ module mo_m4ago_core
   public :: rho_aq,ONE_SIXTH,PI
 
   ! Core parameters for M4AGO
-  real, protected :: agg_Re_crit                       ! critical diameter-based particle Reynolds number for fragmentation
-  real, protected :: agg_df_min,agg_df_max             ! minimum and maximum fractal dim of aggregates
-  real, protected :: df_slope                          ! slope of df versus stickiness mapping
-  real, protected :: stickiness_min,stickiness_max     ! minimum and maximum stickiness of marine aggregates
-  real, parameter :: rho_aq         = 1025.            ! water reference density  (1025 kg/m^3)
-  real, parameter :: grav_acc_const = 9.81             ! gravitational acceleration constant
+  real(wp), protected :: agg_Re_crit                       ! critical diameter-based particle Reynolds number for fragmentation
+  real(wp), protected :: agg_df_min,agg_df_max             ! minimum and maximum fractal dim of aggregates
+  real(wp), protected :: df_slope                          ! slope of df versus stickiness mapping
+  real(wp), protected :: stickiness_min,stickiness_max     ! minimum and maximum stickiness of marine aggregates
+  real(wp), parameter :: rho_aq         = 1025.            ! water reference density  (1025 kg/m^3)
+  real(wp), parameter :: grav_acc_const = 9.81             ! gravitational acceleration constant
 
   ! constants for the drag coefficient CD according to Ji & Logan 1991
-  real, parameter :: AJ1 = 24.00
-  real, parameter :: AJ2 = 29.03
-  real, parameter :: AJ3 = 14.15
-  real, parameter :: BJ1 = 1.0
-  real, parameter :: BJ2 = 0.871
-  real, parameter :: BJ3 = 0.547
+  real(wp), parameter :: AJ1 = 24.00_wp
+  real(wp), parameter :: AJ2 = 29.03_wp
+  real(wp), parameter :: AJ3 = 14.15_wp
+  real(wp), parameter :: BJ1 = 1.0_wp
+  real(wp), parameter :: BJ2 = 0.871_wp
+  real(wp), parameter :: BJ3 = 0.547_wp
 
   ! Helping parameters
-  real, parameter :: EPS_ONE   = EPSILON(1.)
-  real, parameter :: ONE_SIXTH = 1./6.
-  real, parameter :: PI        = 3.141592654
+  real(wp), parameter :: EPS_ONE   = EPSILON(1._wp)
+  real(wp), parameter :: ONE_SIXTH = 1._wp/6._wp
+  real(wp), parameter :: PI        = 3.141592654_wp
 
 contains
 
@@ -134,11 +136,11 @@ contains
 
     implicit none
 
-    real, intent(in) :: Re_crit
-    real, intent(in) :: df_min
-    real, intent(in) :: df_max
-    real, intent(in) :: stick_min
-    real, intent(in) :: stick_max
+    real(wp), intent(in) :: Re_crit
+    real(wp), intent(in) :: df_min
+    real(wp), intent(in) :: df_max
+    real(wp), intent(in) :: stick_min
+    real(wp), intent(in) :: stick_max
 
     agg_Re_crit    = Re_crit
     agg_df_min     = df_min
@@ -163,13 +165,13 @@ contains
 
     implicit none
     type(aggregates),intent(inout)      :: aggs
-    real,                    intent(in) :: mu  ! molecular dynamic viscosity of sea water (kg/(m*s))
+    real(wp),                    intent(in) :: mu  ! molecular dynamic viscosity of sea water (kg/(m*s))
 
     integer :: ipp
-    real    :: stickiness_mapped
-    real    :: A_total
-    real    :: V_solid
-    real    :: Vdpfrac
+    real(wp)    :: stickiness_mapped
+    real(wp)    :: A_total
+    real(wp)    :: V_solid
+    real(wp)    :: Vdpfrac
 
     aggs%av_dp          = 0.
     aggs%av_rho_p       = 0.
@@ -216,22 +218,23 @@ contains
     ! slope = -0.5*(3+df+(2+df-D2)/(2-b)) reduces to:
     !
     ! careful: for df=1.5904: b_agg=2*df where w_s is undefined.
-    aggs%b_agg = 0.5*(3. + aggs%df_agg + (2. + aggs%df_agg - min(2., aggs%df_agg))/(2. - BJ2))
+    aggs%b_agg = 0.5_wp*(3._wp + aggs%df_agg                                                       &
+                        & + (2._wp + aggs%df_agg - min(2._wp, aggs%df_agg))/(2._wp - BJ2))
 
 
     ! ----- calc primary particle mean diameter and mean density
     ! primary particle mean diameter according to Bushell & Amal 1998, 2000
     ! sum(n_i) not changing - can be pulled out and thus cancels out
     do ipp = 1,aggs%NPrimPartTypes
-      aggs%av_dp   = aggs%av_dp   + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**3.
+      aggs%av_dp   = aggs%av_dp   + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**3
       Vdpfrac = Vdpfrac + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**aggs%df_agg
 
       aggs%av_rho_p = aggs%av_rho_p + aggs%V_pp(ipp)*aggs%rho_pp(ipp)
       V_solid  = V_solid  + aggs%V_pp(ipp)
     enddo
-    aggs%av_dp    = (aggs%av_dp/Vdpfrac)**(1./(3. - aggs%df_agg))
+    aggs%av_dp    = (aggs%av_dp/Vdpfrac)**(1._wp/(3._wp - aggs%df_agg))
     aggs%av_rho_p = aggs%av_rho_p/V_solid
-    !    aggs%av_dp    = (av_dp/(Vdpfrac+EPS_ONE))**(1./(3. - df_agg))
+    !    aggs%av_dp    = (av_dp/(Vdpfrac+EPS_ONE))**(1._wp/(3._wp - df_agg))
     !    aggs%av_rho_p = av_rho_p/(V_solid+EPS_ONE)
 
     ! init Re_crit_agg - with a global value
@@ -271,19 +274,19 @@ contains
     implicit none
     ! Arguments
     type(aggregates),intent(in) :: aggs
-    real, intent(in) :: AJ
-    real, intent(in) :: BJ
-    real, intent(in) :: Re
-    real, intent(in) :: mu
+    real(wp), intent(in) :: AJ
+    real(wp), intent(in) :: BJ
+    real(wp), intent(in) :: Re
+    real(wp), intent(in) :: mu
 
     ! Local variables
 
-    real :: nu_vis
+    real(wp) :: nu_vis
 
     nu_vis =  mu/rho_aq
 
-    get_dRe = (Re*nu_vis)**((2. - BJ)/aggs%df_agg)/(4./3.*(aggs%av_rho_p - rho_aq)/rho_aq          &
-           *aggs%av_dp**(3. - aggs%df_agg)*grav_acc_const/(AJ*nu_vis**(BJ)))**(1./aggs%df_agg)
+    get_dRe = (Re*nu_vis)**((2._wp - BJ)/aggs%df_agg)/(4._wp/3._wp*(aggs%av_rho_p - rho_aq)/rho_aq &
+           *aggs%av_dp**(3._wp - aggs%df_agg)*grav_acc_const/(AJ*nu_vis**(BJ)))**(1._wp/aggs%df_agg)
 
   end function get_dRe
 
@@ -296,25 +299,25 @@ contains
     implicit none
 
     type(aggregates),intent(in) :: aggs
-    real, intent(in) :: AJ
-    real, intent(in) :: BJ
-    real, intent(in) :: upper_bound
-    real, intent(in) :: lower_bound
-    real, intent(in) :: mu
+    real(wp), intent(in) :: AJ
+    real(wp), intent(in) :: BJ
+    real(wp), intent(in) :: upper_bound
+    real(wp), intent(in) :: lower_bound
+    real(wp), intent(in) :: mu
 
     ! Local variables
-    real :: nu_vis
+    real(wp) :: nu_vis
 
     nu_vis =  mu/rho_aq
-    get_ws_agg_integral = (4./3.*(aggs%av_rho_p - rho_aq)/rho_aq                                   &
-                        & *aggs%av_dp**(3. - aggs%df_agg)*grav_acc_const                           &
-                        & /(AJ*nu_vis**BJ))**(1./(2. - BJ))                                        &
-                        & *(upper_bound**(1. - aggs%b_agg + aggs%df_agg                            &
-                        & + (BJ + aggs%df_agg - 2.)/(2. - BJ))                                     &
-                        & /(1. - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg - 2.)/(2. - BJ))     &
-                        & - lower_bound**(1. - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg -2.)   &
-                        & /(2. - BJ))                                                              &
-                        & /(1. - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg - 2.)/(2. - BJ)))
+    get_ws_agg_integral = (4._wp/3._wp*(aggs%av_rho_p - rho_aq)/rho_aq                             &
+                   & *aggs%av_dp**(3._wp - aggs%df_agg)*grav_acc_const                             &
+                   & /(AJ*nu_vis**BJ))**(1._wp/(2._wp - BJ))                                       &
+                   & *(upper_bound**(1._wp - aggs%b_agg + aggs%df_agg                              &
+                   & + (BJ + aggs%df_agg - 2._wp)/(2._wp - BJ))                                    &
+                   & /(1._wp - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg - 2._wp)/(2._wp - BJ)) &
+                   & - lower_bound**(1._wp - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg -2._wp)  &
+                   & /(2._wp - BJ))                                                                &
+                   & /(1._wp - aggs%b_agg + aggs%df_agg + (BJ + aggs%df_agg - 2._wp)/(2._wp - BJ)))
 
   end function get_ws_agg_integral
 
@@ -334,7 +337,7 @@ contains
     implicit none
 
     type(aggregates),intent(inout) :: aggs
-    real, intent(in) :: mu
+    real(wp), intent(in) :: mu
 
     ! Local
     real :: d_Re01, d_Re10, d_low, ws_agg_ints
@@ -343,12 +346,12 @@ contains
     ! for shear-driven break-up, check against integration bounds
     ! calc integration limits for Re-dependent sinking:
     ! Re=0.1
-    d_Re01 = get_dRe(aggs,AJ1, BJ1, 0.1,mu)
+    d_Re01 = get_dRe(aggs,AJ1, BJ1, 0.1_wp,mu)
     ! Re=10
-    d_Re10 = get_dRe(aggs,AJ2, BJ2, 10.,mu)
+    d_Re10 = get_dRe(aggs,AJ2, BJ2, 10._wp,mu)
     d_low  = aggs%av_dp
 
-    ws_agg_ints = 0.
+    ws_agg_ints = 0._wp
     if(aggs%dmax_agg >= d_Re01)then ! Re > 0.1
                                        ! - collect full range up to
                                        ! 0.1, (dp->d_Re1) and set lower bound to
@@ -375,9 +378,9 @@ contains
 
     ! concentration-weighted mean sinking velocity
     ws_Re = (ws_agg_ints                                                                           &
-            & /((aggs%dmax_agg**(1. + aggs%df_agg - aggs%b_agg)                                    &
-            & - aggs%av_dp**(1. + aggs%df_agg - aggs%b_agg))                                       &
-            & / (1. + aggs%df_agg - aggs%b_agg)))  ! (m/s)
+            & /((aggs%dmax_agg**(1._wp + aggs%df_agg - aggs%b_agg)                                 &
+            & - aggs%av_dp**(1._wp + aggs%df_agg - aggs%b_agg))                                    &
+            & / (1._wp + aggs%df_agg - aggs%b_agg)))  ! (m/s)
 
   end function ws_Re
 
@@ -409,14 +412,14 @@ contains
     implicit none
 
     type(aggregates),intent(inout) :: aggs
-    real,intent(in) :: mu
-    real        :: nu_vis
+    real(wp),intent(in) :: mu
+    real(wp)        :: nu_vis
 
     nu_vis  =  mu/rho_aq
-    max_agg_diam_white = (aggs%Re_crit_agg*nu_vis)**((2. - BJ3)/aggs%df_agg)                       &
-                        & /((4./3.)*(aggs%av_rho_p - rho_aq)/rho_aq                                &
-                        & *aggs%av_dp**(3. - aggs%df_agg)*grav_acc_const                           &
-                        & /(AJ3*nu_vis**BJ3))**(1./aggs%df_agg)
+    max_agg_diam_white = (aggs%Re_crit_agg*nu_vis)**((2._wp - BJ3)/aggs%df_agg)                    &
+                        & /((4._wp/3._wp)*(aggs%av_rho_p - rho_aq)/rho_aq                          &
+                        & *aggs%av_dp**(3._wp - aggs%df_agg)*grav_acc_const                        &
+                        & /(AJ3*nu_vis**BJ3))**(1._wp/aggs%df_agg)
 
   end function max_agg_diam_white
 
@@ -430,11 +433,11 @@ contains
     type(aggregates),intent(in) :: aggs
 
     ! Volume-weighted mean aggregate density
-    volweighted_agg_density = (aggs%av_rho_p-rho_aq)*aggs%av_dp**(3.-aggs%df_agg)                  &
-                            & *(4.-aggs%b_agg)*(aggs%dmax_agg**(1.+aggs%df_agg-aggs%b_agg)         &
-                            &                  - aggs%av_dp**(1.+aggs%df_agg-aggs%b_agg))          &
-                            &  / ((1.+aggs%df_agg-aggs%b_agg)                                      &
-                            & *(aggs%dmax_agg**(4.-aggs%b_agg) - aggs%av_dp**(4.-aggs%b_agg)))     &
+    volweighted_agg_density = (aggs%av_rho_p-rho_aq)*aggs%av_dp**(3._wp-aggs%df_agg)               &
+                            & *(4._wp-aggs%b_agg)*(aggs%dmax_agg**(1._wp+aggs%df_agg-aggs%b_agg)   &
+                            &                  - aggs%av_dp**(1._wp+aggs%df_agg-aggs%b_agg))       &
+                            &  / ((1._wp+aggs%df_agg-aggs%b_agg)                                   &
+                            & *(aggs%dmax_agg**(4._wp-aggs%b_agg) -aggs%av_dp**(4._wp-aggs%b_agg)))&
                             & + rho_aq
 
   end function volweighted_agg_density
@@ -445,11 +448,12 @@ contains
     type(aggregates),intent(in) :: aggs
 
     ! Volume-weighted mean aggregate porosity
-    volweighted_agg_porosity =  1. - ((4.-aggs%b_agg)*aggs%av_dp**(3.-aggs%df_agg)                 &
-                             &         *(aggs%dmax_agg**(1.+aggs%df_agg-aggs%b_agg)                &
-                             &                        - aggs%av_dp**(1.+aggs%df_agg-aggs%b_agg)))  &
-                             &       /((1.+aggs%df_agg-aggs%b_agg)*(aggs%dmax_agg**(4.-aggs%b_agg) &
-                             &                                      - aggs%av_dp**(4.-aggs%b_agg)))
+    volweighted_agg_porosity =  1._wp - ((4._wp-aggs%b_agg)*aggs%av_dp**(3._wp-aggs%df_agg)        &
+                             &         *(aggs%dmax_agg**(1._wp+aggs%df_agg-aggs%b_agg)             &
+                             &                     - aggs%av_dp**(1._wp+aggs%df_agg-aggs%b_agg)))  &
+                             &       /((1._wp+aggs%df_agg-aggs%b_agg)                              &
+                             &                                 *(aggs%dmax_agg**(4._wp-aggs%b_agg) &
+                             &                                   - aggs%av_dp**(4._wp-aggs%b_agg)))
 
   end function volweighted_agg_porosity
 
@@ -458,12 +462,12 @@ contains
 
     type(aggregates),intent(in) :: aggs
 
-    conc_weighted_mean_agg_diameter =  (1. + aggs%df_agg - aggs%b_agg)                             &
-                          &             / (2. + aggs%df_agg - aggs%b_agg)                          &
-                          & *(aggs%dmax_agg**(2. + aggs%df_agg - aggs%b_agg)                       &
-                          &                    - aggs%av_dp**(2. + aggs%df_agg - aggs%b_agg))      &
-                          & / (aggs%dmax_agg**(1.+aggs%df_agg-aggs%b_agg)                          &
-                          &                    - aggs%av_dp**(1. + aggs%df_agg-aggs%b_agg))
+    conc_weighted_mean_agg_diameter =  (1._wp + aggs%df_agg - aggs%b_agg)                          &
+                          &             / (2._wp + aggs%df_agg - aggs%b_agg)                       &
+                          & *(aggs%dmax_agg**(2._wp + aggs%df_agg - aggs%b_agg)                    &
+                          &                    - aggs%av_dp**(2._wp + aggs%df_agg - aggs%b_agg))   &
+                          & / (aggs%dmax_agg**(1._wp+aggs%df_agg-aggs%b_agg)                       &
+                          &                    - aggs%av_dp**(1._wp + aggs%df_agg-aggs%b_agg))
 
   end function conc_weighted_mean_agg_diameter
 
@@ -477,7 +481,7 @@ contains
   !=================================================================================================
   ! CURRENTLY UN-USED FUNCTIONS
 
-  real  function mass_factor(dp,df,rhop)
+  real(wp)  function mass_factor(dp,df,rhop)
     !-----------------------------------------------------------------------
     !>
     !! mass_factor calculates the mass factor for the mass of a single
@@ -485,18 +489,18 @@ contains
     !!
     implicit none
 
-    real, intent(in) :: dp
-    real, intent(in) :: df
-    real, intent(in) :: rhop
+    real(wp), intent(in) :: dp
+    real(wp), intent(in) :: df
+    real(wp), intent(in) :: rhop
 
     ! mass factor
-    mass_factor = ONE_SIXTH * PI * dp**(3. - df) * rhop
+    mass_factor = ONE_SIXTH * PI * dp**(3._wp - df) * rhop
 
   end function mass_factor
 
 
   !=================================================================================================
-  real function rho_agg(d,rhop,dp,df,rho)
+  real(wp) function rho_agg(d,rhop,dp,df,rho)
     !-----------------------------------------------------------------------
     !>
     !! rho_agg provides the aggregate density
@@ -504,18 +508,18 @@ contains
 
     implicit none
 
-    real, intent(in) :: d
-    real, intent(in) :: rhop
-    real, intent(in) :: dp
-    real, intent(in) :: df
-    real, intent(in) :: rho
+    real(wp), intent(in) :: d
+    real(wp), intent(in) :: rhop
+    real(wp), intent(in) :: dp
+    real(wp), intent(in) :: df
+    real(wp), intent(in) :: rho
 
-    rho_agg =  (rhop - rho)*(dp/d)**(3. - df) + rho
+    rho_agg =  (rhop - rho)*(dp/d)**(3._wp - df) + rho
 
   end function rho_agg
 
   !=================================================================================================
-  real function Re_fun(ws,d,mu,rho)
+  real(wp) function Re_fun(ws,d,mu,rho)
     !-----------------------------------------------------------------------
     !>
     !! Particle Reynolds number for settling particles (based on diameter)
@@ -523,7 +527,7 @@ contains
 
     implicit none
 
-    real,intent(in) :: ws,d,mu,rho
+    real(wp),intent(in) :: ws,d,mu,rho
 
     Re_fun = abs(ws*d*rho/mu)
 
