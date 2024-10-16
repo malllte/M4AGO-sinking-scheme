@@ -76,22 +76,22 @@ module mo_m4ago_core
   private
 
   type, public :: aggregates
-    integer :: NPrimPartTypes                       ! Number of primary particle types
-    real    :: av_dp                                ! mean primary particle diameter (m)
-    real    :: av_rho_p                             ! mean primary particle density (kg/m3)
-    real    :: df_agg                               ! aggregate fractal dimension - range: agg_df_min-agg_df_max (-)
-    real    :: b_agg                                ! aggregate number distribution slope (-)
-    real    :: dmax_agg                             ! maximum aggregate diameter (m)
-    real    :: stickiness_agg                       ! aggregate stickiness - range : 0-1 (-)
-    real    :: stickiness_frustule                  ! opal frustule stickiness
-    real    :: Re_crit_agg                          ! critical diameter-based particle Reynolds number for fragmentation
-    real    :: ws_aggregates                        ! mean aggregate sinking velocity (m/s)
-    real,dimension(:), allocatable :: dp_pp         ! primary particle diameter of each primary particle type (L)
-    real,dimension(:), allocatable :: rho_pp        ! primary particle density of each primary particle type (M/L^3)
-    real,dimension(:), allocatable :: stickiness_pp ! stickiness of each primary particle type (-)
-    real,dimension(:), allocatable :: n_pp          ! total number of each primary particle type (#/L^3)
-    real,dimension(:), allocatable :: A_pp          ! surface area of each primary particle type (L^2/L^3)
-    real,dimension(:), allocatable :: V_pp          ! total volume of each primary particle type (L^3/L^3)
+    integer  :: NPrimPartTypes                       ! Number of primary particle types
+    real(wp) :: av_dp                                ! mean primary particle diameter (m)
+    real(wp) :: av_rho_p                             ! mean primary particle density (kg/m3)
+    real(wp) :: df_agg                               ! aggregate fractal dimension - range: agg_df_min-agg_df_max (-)
+    real(wp) :: b_agg                                ! aggregate number distribution slope (-)
+    real(wp) :: dmax_agg                             ! maximum aggregate diameter (m)
+    real(wp) :: stickiness_agg                       ! aggregate stickiness - range : 0-1 (-)
+    real(wp) :: stickiness_frustule                  ! opal frustule stickiness
+    real(wp) :: Re_crit_agg                          ! critical diameter-based particle Reynolds number for fragmentation
+    real(wp) :: ws_aggregates                        ! mean aggregate sinking velocity (m/s)
+    real(wp),dimension(:), allocatable :: dp_pp         ! primary particle diameter of each primary particle type (L)
+    real(wp),dimension(:), allocatable :: rho_pp        ! primary particle density of each primary particle type (M/L^3)
+    real(wp),dimension(:), allocatable :: stickiness_pp ! stickiness of each primary particle type (-)
+    real(wp),dimension(:), allocatable :: n_pp          ! total number of each primary particle type (#/L^3)
+    real(wp),dimension(:), allocatable :: A_pp          ! surface area of each primary particle type (L^2/L^3)
+    real(wp),dimension(:), allocatable :: V_pp          ! total volume of each primary particle type (L^3/L^3)
   end type aggregates
 
   ! Public subroutines & functions
@@ -110,8 +110,8 @@ module mo_m4ago_core
   real(wp), protected :: agg_df_min,agg_df_max             ! minimum and maximum fractal dim of aggregates
   real(wp), protected :: df_slope                          ! slope of df versus stickiness mapping
   real(wp), protected :: stickiness_min,stickiness_max     ! minimum and maximum stickiness of marine aggregates
-  real(wp), parameter :: rho_aq         = 1025.            ! water reference density  (1025 kg/m^3)
-  real(wp), parameter :: grav_acc_const = 9.81             ! gravitational acceleration constant
+  real(wp), parameter :: rho_aq         = 1025._wp         ! water reference density  (1025 kg/m^3)
+  real(wp), parameter :: grav_acc_const = 9.81_wp          ! gravitational acceleration constant
 
   ! constants for the drag coefficient CD according to Ji & Logan 1991
   real(wp), parameter :: AJ1 = 24.00_wp
@@ -173,13 +173,13 @@ contains
     real(wp)    :: V_solid
     real(wp)    :: Vdpfrac
 
-    aggs%av_dp          = 0.
-    aggs%av_rho_p       = 0.
-    aggs%stickiness_agg = 0.
+    aggs%av_dp          = 0._wp
+    aggs%av_rho_p       = 0._wp
+    aggs%stickiness_agg = 0._wp
 
-    A_total        = 0.
-    V_solid        = 0.
-    Vdpfrac        = 0.
+    A_total        = 0._wp
+    V_solid        = 0._wp
+    Vdpfrac        = 0._wp
 
     ! ------ calc mean aggregate stickiness
     do ipp = 1,aggs%NPrimPartTypes
