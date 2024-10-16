@@ -290,7 +290,6 @@ contains
     ! molecular dynamic viscosity
     call dynvis(kpie, kpje, kpke, kbnd, pddpo, omask, ptho, psao, m4ago_ppo)
 
-    !commented: $OMP PARALLEL DO PRIVATE(i,j,k) COPYIN(av_dp,av_rho_p,df_agg,b_agg,Lmax_agg,rho_aq,stickiness_agg,ws_aggregates,dp_primpart,rho_primpart,n_primpart,A_primpart,V_primpart,stickiness_primpart)
     !$OMP PARALLEL DO PRIVATE(i,j,k)
     do j = 1,kpje
       do i = 1,kpie
