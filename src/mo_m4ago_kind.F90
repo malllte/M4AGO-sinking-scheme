@@ -12,13 +12,12 @@ use iso_fortran_env, only:  int32, int64, real32, real64, real128
 
   public :: wp
 
-
-#ifdef REAL64
-  integer,parameter :: rk = real64
+#ifdef REAL32
+  integer,parameter :: rk = real32
 #elif REAL128
   integer,parameter :: rk = real128
 #else
-  integer,parameter :: rk = real32
+  integer,parameter :: rk = real64
 #endif
 
 !#ifdef INT64
@@ -28,12 +27,10 @@ use iso_fortran_env, only:  int32, int64, real32, real64, real128
 !#endif
 
 
-
-
 #ifdef HAMOCC
   integer, parameter :: wp = r8 !selected_real_kind()
 #else
-  integer, parameter :: wp = real64
+  integer, parameter :: wp = rk
 #endif
 
 end module mo_m4ago_kind
