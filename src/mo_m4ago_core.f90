@@ -97,7 +97,7 @@ module mo_m4ago_core
   real(wp), protected :: stickiness_min,stickiness_max     ! minimum and maximum stickiness of marine aggregates
   real(wp), protected :: stickiness_agg                    ! mean aggregate stickiness
   real(wp), protected :: ws_aggregates                     ! mean mass concentration-weighted sinking velocity of aggregates
-
+  !$OMP THREADPRIVATE(av_dp,av_rho_p,df_agg,b_agg,Lmax_agg,stickiness_agg,ws_aggregates)
 
   real(wp), parameter :: rho_aq         = 1025._wp            ! water reference density  (1025 kg/m^3)
   real(wp), parameter :: grav_acc_const = 9.81_wp             ! gravitational acceleration constant
