@@ -283,13 +283,16 @@ contains
     ! molecular dynamic viscosity
     call dynvis(kpie, kpje, kpke, kbnd, pddpo, omask, ptho, psao, m4ago_ppo)
 
-    !$OMP PARALLEL DO PRIVATE(i,j,k,aggs)
+    !$OMP PARALLEL DO PRIVATE(i,j,k,aggs,agg_env)
     do j = 1,kpje
       do i = 1,kpie
         do k = 1,kpke
           if(pddpo(i,j,k) > dp_min .and. omask(i,j) > 0.5) then
+
+            ! Provide aggregates environment
             agg_env%rho_aq = rho_aq
             agg_env%mu     = dyn_vis(i,j,k)
+
             ! ------ prepare primary particle information to calculate aggregate properties
             call prepare_primary_particles(i, j, k,aggs,agg_env)
 
