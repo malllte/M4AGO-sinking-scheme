@@ -67,15 +67,15 @@
 
 module mo_m4ago_physics
 
+  use control, only           : wp
+  
   implicit none
-
-  private
 
   public :: mol_dyn_vis
 
 contains
 
-  real function mol_dyn_vis(press_val,ptho_val,psao_val)
+  real(wp) function mol_dyn_vis(press_val,ptho_val,psao_val)
     !-----------------------------------------------------------------------
     !>
     !! mol_dyn_vis calculates the molecular dynamic viscosity according to
@@ -86,9 +86,9 @@ contains
     !!
     !! returns: molecular dynamic viscosity [kg/(m*s)]
 
-    real, intent(in) :: press_val ! pressure [dbar]
-    real, intent(in) :: ptho_val  ! temperature [deg C]
-    real, intent(in) :: psao_val  ! salinity [psu]
+    real(wp), intent(in) :: press_val ! pressure [dbar]
+    real(wp), intent(in) :: ptho_val  ! temperature [deg C]
+    real(wp), intent(in) :: psao_val  ! salinity [psu]
 
     mol_dyn_vis = 0.1 & ! Unit conversion: g / (cm*s) -> kg / (m*s)
                       &     *(1.79e-2                                                         &
