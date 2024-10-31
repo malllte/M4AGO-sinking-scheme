@@ -349,7 +349,7 @@ contains
     type(agg_environment),intent(in) :: agg_env
 
     ! Local
-    real :: d_Re01, d_Re10, d_low, ws_agg_ints
+    real(wp) :: d_Re01, d_Re10, d_low, ws_agg_ints
 
     ! for Re-dependent, it should always be Re_crit_agg>10
     ! for shear-driven break-up, check against integration bounds
