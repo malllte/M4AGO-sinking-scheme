@@ -69,7 +69,8 @@
 
 module mo_m4ago_core
 
-  use mo_m4ago_kind, only: wp
+  !use mo_m4ago_kind, only: wp
+  use control, only: wp
 
   implicit none
 
@@ -102,7 +103,7 @@ module mo_m4ago_core
     real(wp) :: rho_aq                        ! density of surrounding water
   end type agg_environment
 
-  ! Public subroutines & functions
+! Public subroutines & functions
   public :: init_m4ago_core_parameters        ! Initialization of module parameters
   public :: aggregate_properties              ! calculation of aggregate properties from primary particles information
   public :: ws_Re_approx                      ! mass concentration-weighted mean sinking velocity
@@ -273,7 +274,7 @@ contains
   end subroutine ws_Re_approx
 
   !=================================================================================================
-  real function get_dRe(aggs,AJ, BJ, Re,agg_env)
+  real(wp) function get_dRe(aggs,AJ, BJ, Re,agg_env)
     !------------------------------------------------------------------------
     !>
     !! get the diameter of particles that feature a certain particle Reynolds number
@@ -300,7 +301,7 @@ contains
   end function get_dRe
 
   !=================================================================================================
-  real function get_ws_agg_integral(aggs,AJ, BJ, lower_bound, upper_bound,agg_env)
+  real(wp) function get_ws_agg_integral(aggs,AJ, BJ, lower_bound, upper_bound,agg_env)
     !------------------------------------------------------------------------
     !>
     !! Calculate piecewise defined integral
@@ -349,7 +350,7 @@ contains
     type(agg_environment),intent(in) :: agg_env
 
     ! Local
-    real :: d_Re01, d_Re10, d_low, ws_agg_ints
+    real(wp) :: d_Re01, d_Re10, d_low, ws_agg_ints
 
     ! for Re-dependent, it should always be Re_crit_agg>10
     ! for shear-driven break-up, check against integration bounds

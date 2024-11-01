@@ -67,7 +67,8 @@
 
 module mo_m4ago_physics
 
-  use mo_m4ago_kind, only: wp
+  use control, only           : wp
+!  use mo_m4ago_kind, only: wp
 
   implicit none
 
@@ -77,7 +78,7 @@ module mo_m4ago_physics
 
 contains
 
-  real function mol_dyn_vis(press_val,ptho_val,psao_val)
+  real(wp) function mol_dyn_vis(press_val,ptho_val,psao_val)
     !-----------------------------------------------------------------------
     !>
     !! mol_dyn_vis calculates the molecular dynamic viscosity according to
