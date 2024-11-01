@@ -273,7 +273,7 @@ contains
   end subroutine ws_Re_approx
 
   !=================================================================================================
-  real function get_dRe(aggs,AJ, BJ, Re,agg_env)
+  real(wp) function get_dRe(aggs,AJ, BJ, Re,agg_env)
     !------------------------------------------------------------------------
     !>
     !! get the diameter of particles that feature a certain particle Reynolds number
@@ -300,7 +300,7 @@ contains
   end function get_dRe
 
   !=================================================================================================
-  real function get_ws_agg_integral(aggs,AJ, BJ, lower_bound, upper_bound,agg_env)
+  real(wp) function get_ws_agg_integral(aggs,AJ, BJ, lower_bound, upper_bound,agg_env)
     !------------------------------------------------------------------------
     !>
     !! Calculate piecewise defined integral
@@ -331,7 +331,7 @@ contains
   end function get_ws_agg_integral
 
   !===================================================================================== ws_Re
-  real function ws_Re(aggs,agg_env)
+  real(wp) function ws_Re(aggs,agg_env)
     !-----------------------------------------------------------------------
     !>
     !! ws_Re:  distribution integrated to Lmax (Re crit dependent maximum agg size)
@@ -411,7 +411,7 @@ contains
   end subroutine max_agg_diam
 
   !================================================ maximum diameter of agg in non-stratified fluid
-  real  function max_agg_diam_white(aggs,agg_env)
+  real(wp)  function max_agg_diam_white(aggs,agg_env)
     !-------------------------------------------------------------------------
     !>
     !! maximum aggregate diameter in a non-stratified fluid - following the
@@ -438,7 +438,7 @@ contains
   !=================================================================================================
   ! DIAGNOSTICS
 
-  real function volweighted_agg_density(aggs,agg_env)
+  real(wp) function volweighted_agg_density(aggs,agg_env)
 
     type(aggregates),intent(in)      :: aggs
     type(agg_environment),intent(in) :: agg_env
@@ -454,7 +454,7 @@ contains
   end function volweighted_agg_density
 
   !=================================================================================================
-  real function volweighted_agg_porosity(aggs)
+  real(wp) function volweighted_agg_porosity(aggs)
 
     type(aggregates),intent(in) :: aggs
 
@@ -469,7 +469,7 @@ contains
   end function volweighted_agg_porosity
 
   !=================================================================================================
-  real function conc_weighted_mean_agg_diameter(aggs)
+  real(wp) function conc_weighted_mean_agg_diameter(aggs)
 
     type(aggregates),intent(in) :: aggs
 
