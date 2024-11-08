@@ -292,8 +292,12 @@ contains
         visco(k)=0.
         wsagg(k)=0.
 
-        ! ------ get molecular dynamic viscosity [kg/m/s]
-        visco(k) = mol_dyn_vis(layer_depth(k),ptho(k),psao(k)) ! layer_depth [m] = pressure [dbar]
+
+        ! ------ provide aggregates environment
+        visco(k) = mol_dyn_vis(layer_depth(k),ptho(k),psao(k)) ! molecular dynamic viscosity [kg/m/s]
+                                                               ! layer_depth [m] = pressure [dbar]
+        agg_env%rho_aq = rho_aq
+        agg_env%mu     = visco(k)
 
         ! ------ prepare primary particle information to calculate aggregate properties
         !call prepare_primary_particles(tra, k)
