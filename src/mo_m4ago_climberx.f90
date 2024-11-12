@@ -274,7 +274,6 @@ contains
     integer  :: k
     type(agg_environment) :: agg_env
     type(aggregates)      :: aggs
-    !! !$OMP threadprivate(k,aggs,agg_env)
     
     allocate(aggs%dp_pp(NPrimPartTypes))
     allocate(aggs%rho_pp(NPrimPartTypes))
@@ -284,9 +283,6 @@ contains
     allocate(aggs%V_pp(NPrimPartTypes))
 
 
-    !! !$OMP PARALLEL DO PRIVATE(k)
-    !! !$OMP PARALLEL PRIVATE(k) COPYIN(av_dp,av_rho_p,df_agg,b_agg,Lmax_agg,rho_aq,stickiness_agg,ws_aggregates)
-    !!                           COPYIN(av_dp,av_rho_p,df_agg,b_agg,Lmax_agg,rho_aq,stickiness_agg,ws_aggregates,dp_primpart,rho_primpart,n_primpart,A_primpart,V_primpart,stickiness_primpart)
     !$OMP PARALLEL DO PRIVATE(k,aggs,agg_env)
     do k = 1,kbo
         visco(k)=0.
@@ -301,17 +297,13 @@ contains
 
         ! ------ prepare primary particle information to calculate aggregate properties
         !call prepare_primary_particles(tra, k)
-        !call prepare_primary_particles(tra%ocetra(k,idet), 0._wp, 0._wp, 0._wp)
         !call prepare_primary_particles(CC_det(k), 3.0e-14_wp, 0._wp, 0._wp)
         call prepare_primary_particles(CC_det(k), CC_opal(k), CC_calc(k), CC_dust(k), aggs, agg_env)
 
         ! ------ calculate aggregate properties from individual primary particle information
-        !call aggregate_properties(NPrimPartTypes,dp_primpart,rho_primpart,n_primpart,          &
-        !                          A_primpart,V_primpart,stickiness_primpart,visco(k))   ! dyn_vis(k))
         call aggregate_properties(aggs, agg_env)
  
         ! ======== calculate the mean sinking velocity of aggregates =======
-        !call ws_Re_approx(visco(k)) !(dyn_vis(k))
         call ws_Re_approx(aggs, agg_env)
  
         ! Limit settling velocity wrt CFL:
@@ -391,11 +383,6 @@ contains
     real(wp) :: rho_frustule                       ! density of diatom frustule incl. opal, detritus and water
     real(wp) :: rho_diatom                         ! density of either hollow frustule or with additions of detritus and water
     real(wp) :: stickiness_frustule                ! stickiness of the diatom frustile as primary particle
-
-    !C_det  = FIXME! abs(ocetra(i,j,k,idet))
-    !C_opal = abs(ocetra(i,j,k,iopal))
-    !C_calc = abs(ocetra(i,j,k,icalc))
-    !C_dust = abs(ocetra(i,j,k,ifdust))
 
     n_det   = 0._wp ! number of primary particles in a unit volume
     n_opal  = 0._wp
