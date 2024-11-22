@@ -90,6 +90,8 @@ module mo_m4ago_climberx
 
   private
 
+  ! Malte test
+  
   ! Public subroutines / called from subroutine ocprod in CLIMBER-X
   public :: climberx_mean_aggregate_sinking_speed, init_m4ago_nml_params, init_m4ago_params
 
