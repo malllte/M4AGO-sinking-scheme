@@ -87,6 +87,9 @@ contains
     !! Meerwassers. Beitraege zur Meereskunde, Heft 29 (in German).
     !!
     !! returns: molecular dynamic viscosity [kg/(m*s)]
+    !!
+    !! Valid range:
+    !! 0 degC < T < 30 degC, 0 < S < 36, and 1 dbar < p < 1000 dbar
 
     real(wp), intent(in) :: press_val ! pressure [dbar]
     real(wp), intent(in) :: ptho_val  ! temperature [deg C]
@@ -103,6 +106,10 @@ contains
                       &     + press_val*(1.3817e-8_wp*ptho_val - 2.6363e-10_wp*ptho_val**2)        &
                       &     - press_val**2 * (6.3255e-13_wp*ptho_val - 1.2116e-14_wp*ptho_val**2))
 
+    ! For extremely high temperatures, the formulation turns negative. We here introduce a minimum
+    ! value for the viscosity, that refers to ca. 10 dbar, 45 degC and 0 psu of the equation above
+    ! which would be ca.: 0.0004277485639235001 kg/(m*s)
+    mol_dyn_vis = max(0.00043, mol_dyn_vis)
 
 
   end function mol_dyn_vis
