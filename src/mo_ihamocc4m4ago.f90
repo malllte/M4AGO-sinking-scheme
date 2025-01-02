@@ -287,7 +287,7 @@ contains
     do j = 1,kpje
       do i = 1,kpie
         do k = 1,kpke
-          if(pddpo(i,j,k) > dp_min .and. omask(i,j) > 0.5) then
+          if(pddpo(i,j,k) > dp_min .and. omask(i,j) > 0.5_wp) then
 
             ! Provide aggregates environment
             agg_env%rho_aq = rho_aq
@@ -371,11 +371,11 @@ contains
     n_dust  = 0._wp
     n_calc  = 0._wp
 
-    V_det   = 0. ! total volume of primary particles in a unit volume
-    V_opal  = 0.
-    V_calc  = 0.
-    V_dust  = 0.
-    V_solid = 0.
+    V_det   = 0._wp ! total volume of primary particles in a unit volume
+    V_opal  = 0._wp
+    V_calc  = 0._wp
+    V_dust  = 0._wp
+    V_solid = 0._wp
 
     ! n_det are detritus primary particle that are
     ! NOT linked to any diatom frustule
