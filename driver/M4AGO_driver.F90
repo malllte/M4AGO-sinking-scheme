@@ -43,22 +43,88 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
   real(wp) :: V_frustule_opal                          ! volume of opal shell material (L^3)
   real(wp) :: rho_V_frustule_opal                      ! mass of frustule material (M)
 
+  real(wp),parameter :: eps_one = epsilon(1._wp)
+
   ! Parameter for M4AGO core
-  integer, parameter :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
+  integer, parameter    :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
+  type(agg_environment) :: agg_env
+  type(aggregates)      :: aggs
 
 
-  real(wp) :: dynvis  = 0.001567 ! [kg/(m s)] dynamic molecular viscosity
-  real(wp) :: calcdens = 2600.
-  real(wp) :: claydens=2600.
-  real(wp) :: NUM_FAC=1e9
-  real(wp) :: opaldens = 2200.
-  real(wp) :: opalwei = 60.
-  real(wp) :: ropal=20.
+  real(wp) :: dynvis   = 0.001567_wp ! [kg/(m s)] dynamic molecular viscosity
+  real(wp) :: calcdens = 2600._wp
+  real(wp) :: claydens = 2600._wp
+  real(wp) :: NUM_FAC  = 1e9_wp
+  real(wp) :: opaldens = 2200._wp
+  real(wp) :: opalwei  = 60._wp
+  real(wp) :: calcwei  = 100._wp
+  real(wp) :: ropal    = 20._wp
+
+  real(wp), allocatable :: C_det(:)
+  real(wp), allocatable :: C_opal(:)
+  real(wp), allocatable :: C_calc(:)
+  real(wp), allocatable :: C_dust(:)
+
+  ! Choose the test case to run
+  ! Available cases:
+  !    - single   : just test single concentration values
+  !    - Re_crit  : (envisaged) test sinking velocity with respect to critical particle Reynolds number
+  character(100) :: testcase = 'single'
 
   integer i,j,k
 
   call init_m4ago_nml_params
   call init_m4ago_params
+  allocate(aggs%dp_pp(NPrimPartTypes))
+  allocate(aggs%rho_pp(NPrimPartTypes))
+  allocate(aggs%stickiness_pp(NPrimPartTypes))
+  allocate(aggs%n_pp(NPrimPartTypes))
+  allocate(aggs%A_pp(NPrimPartTypes))
+  allocate(aggs%V_pp(NPrimPartTypes))
+
+  select case (testcase)
+
+    case ('single')
+      print*, '========================  Running test case: single ============='
+      allocate(C_det(1))
+      allocate(C_opal(1))
+      allocate(C_calc(1))
+      allocate(C_dust(1))
+
+      C_det   = 1e-7
+      C_opal  = 1e-8
+      C_calc  = 0. !1e-12
+      C_dust  = 0. !1e-11
+      ! Provide aggregates environment
+      agg_env%rho_aq = rho_aq
+      agg_env%mu     = dynvis
+      ! ------ prepare primary particle information
+      call prepare_primary_particles(C_det(1),C_opal(1),C_calc(1),C_dust(1),aggs,agg_env)
+      ! ------ calculate aggregate properties from individual primary particle information
+      call aggregate_properties(aggs, agg_env)
+      ! ======== calculate the mean sinking velocity of aggregates =======
+      call ws_Re_approx(aggs, agg_env)
+
+      print*,'Maximum diameter                      (cm)', aggs%dmax_agg*100._wp
+      print*,'Frustule stickiness                    (-)', aggs%stickiness_frustule
+      print*,'Aggregate stickiness                   (-)', aggs%stickiness_agg
+      print*,'Average primary particle diameter    (mum)', aggs%av_dp*1e6
+      print*,'Average primary particle density   (kg/m3)', aggs%av_rho_p
+      print*,'Fractal dimension                      (-)', aggs%df_agg
+      print*,'Aggregate number distribution slope    (-)', aggs%b_agg
+      print*,'Sinking velocity                     (m/d)', aggs%ws_aggregates*86400._wp
+      print*,'-----------------------------------------------------------------'
+      print*,'Conc.-weighted mean agg. diam.       (mum)',conc_weighted_mean_agg_diameter(aggs)*1e6_wp
+      print*,'Volume-weighted aggregate density  (kg/m3)',volweighted_agg_density(aggs,agg_env)
+      print*,'Volume-weighted aggregate porosity     (-)',volweighted_agg_porosity(aggs)
+      print*,'-----------------------------------------------------------------'
+      print*,'-----------------------------------------------------------------'
+
+    case default
+      print*, 'Invalid test case'
+
+   end select
+
 
 
 
@@ -142,5 +208,129 @@ contains
 
   end subroutine init_m4ago_params
 
+  subroutine prepare_primary_particles(C_det,C_opal,C_calc,C_dust,aggs,agg_env)
+    !-----------------------------------------------------------------------
+    !>
+    !! prepare_primary_particles
+    !! calculates/provides fields with:
+    !!  - primary particle diameter
+    !!  - primary particle density
+    !!  - number of primary particles
+    !!  - surface area of primary particles
+    !!  - volume of primary particles
+    !!  - stickiness of the primary particles
+    !! based on the driving ocean biogeochmistry model tracer field
+
+    implicit none
+
+    real(wp), intent(in)  :: C_det                  !< detritus concentration kmol P/m3
+    real(wp), intent(in)  :: C_opal                 !< opal concentration kmol Si/m3
+    real(wp), intent(in)  :: C_calc                 !< CaCO3 concentration kmol Ca/m3
+    real(wp), intent(in)  :: C_dust                 !< dust kg/m3
+    type(aggregates),intent(inout)   :: aggs
+    type(agg_environment),intent(in) :: agg_env
+
+    real(wp) :: n_det,n_opal,n_calc,n_dust         ! total primary particle number (#)
+    real(wp) :: A_dust,A_det,A_calc,A_opal,A_total ! total surface area of primary particles per unit volume (L^2/L^3)
+    real(wp) :: V_det,V_opal,V_calc,V_dust,V_solid ! total volume of primary particles in a unit volume (L^3/L^3)
+
+    real(wp) :: cell_det_mass                      ! mass of detritus material in diatoms
+    real(wp) :: cell_pot_det_mass                  ! potential (max) mass detritus material in diatoms
+    real(wp) :: free_detritus                      ! freely available detritus mass outside the frustule
+    real(wp) :: V_POM_cell                         ! volume of POM in frustule
+    real(wp) :: V_aq                               ! volume of water space in frustule
+    real(wp) :: rho_frustule                       ! density of diatom frustule incl. opal, detritus and water
+    real(wp) :: rho_diatom                         ! density of either hollow frustule or with additions of detritus and water
+    real(wp) :: stickiness_frustule                ! stickiness of the diatom frustile as primary particle
+
+    n_det   = 0._wp ! number of primary particles in a unit volume
+    n_opal  = 0._wp
+    n_dust  = 0._wp
+    n_calc  = 0._wp
+
+    V_det   = 0._wp ! total volume of primary particles in a unit volume
+    V_opal  = 0._wp
+    V_calc  = 0._wp
+    V_dust  = 0._wp
+    V_solid = 0._wp
+
+    ! n_det are detritus primary particle that are
+    ! NOT linked to any diatom frustule
+    ! n_opal are number of frustule-like primary particles possessing
+    ! a density i) different from pure opal ii) due to a mixture of
+    ! opal frustule, detritus inside the frustule and potentially water
+    ! inside the frustule
+
+    ! describing diatom frustule as hollow sphere
+    ! that is completely or partially filled with detritus
+    ! and water
+    free_detritus     = 0._wp
+    rho_diatom        = 0._wp
+    cell_det_mass     = 0._wp
+    cell_pot_det_mass = 0._wp
+    V_POM_cell        = 0._wp
+    V_aq              = 0._wp
+    rho_frustule      = 0._wp
+
+    ! number of opal frustules (/NUM_FAC)
+    n_opal = C_opal*opalwei/rho_V_frustule_opal
+    ! maximum mass of detritus inside a frustule
+    cell_pot_det_mass = n_opal*V_frustule_inner*agg_org_dens
+
+    ! detritus mass inside frustules
+    cell_det_mass = min(cell_pot_det_mass, C_det*det_mol2mass - EPS_ONE)
+    ! better: cell_det_mass = max(0._wp,min(cell_pot_det_mass,C_det*det_mol2mass))
+
+
+    ! volume of detritus component in cell
+    V_POM_cell = (cell_det_mass/n_opal)/agg_org_dens
+
+    ! if not detritus is available, water is added
+    V_aq = V_frustule_inner -  V_POM_cell
+
+    ! density of the diatom frsutules incl. opal, detritus and water
+    rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*agg_env%rho_aq)/V_dp_opal
+
+    ! mass of extra cellular detritus particles
+    free_detritus = C_det*det_mol2mass  - cell_det_mass
+    rho_diatom = (rho_frustule + cell_det_mass/cell_pot_det_mass*rho_TEP)                          &
+                   /(1._wp + cell_det_mass/cell_pot_det_mass)
+
+    ! number of primary particles
+    n_det  = free_detritus/rho_V_dp_det  ! includes NUM_FAC
+    n_calc = C_calc*calcwei/rho_V_dp_calc
+    n_dust = C_dust/rho_V_dp_dust        ! dust is in kg/m3
+
+    ! calc total areas
+    A_det   = n_det*A_dp_det
+    A_opal  = n_opal*A_dp_opal
+    A_calc  = n_calc*A_dp_calc
+    A_dust  = n_dust*A_dp_dust
+
+    ! total volume of primary particles
+    V_det   = n_det*V_dp_det*NUM_FAC
+    V_opal  = n_opal*V_dp_opal*NUM_FAC
+    V_calc  = n_calc*V_dp_calc*NUM_FAC
+    V_dust  = n_dust*V_dp_dust*NUM_FAC
+
+    ! calc frustule stickiness
+    stickiness_frustule = cell_det_mass/(cell_pot_det_mass +EPS_ONE)*stickiness_TEP                &
+                               & + (1._wp - cell_det_mass/(cell_pot_det_mass + EPS_ONE))           &
+                               &   *stickiness_opal
+
+
+    ! IMPORTANT: the order requires to be the same for all information
+    ! NUMFAC cancels out in the subsequent calculations
+    aggs%NPrimPartTypes = NPrimPartTypes
+    aggs%dp_pp          = (/ dp_dust,  dp_calc,  dp_det,       dp_opal /)
+    aggs%rho_pp         = (/ claydens, calcdens, agg_org_dens, rho_diatom /)
+    aggs%n_pp           = (/ n_dust,   n_calc,   n_det,        n_opal  /)
+    aggs%A_pp           = (/ A_dust,   A_calc,   A_det,        A_opal /)
+    aggs%V_pp           = (/ V_dust,   V_calc,   V_det,        V_opal /)
+    aggs%stickiness_pp  = (/ stickiness_dust, stickiness_calc, stickiness_det, stickiness_frustule /)
+    aggs%stickiness_frustule = stickiness_frustule
+
+
+  end subroutine prepare_primary_particles
 
 end program M4AGO_driver
