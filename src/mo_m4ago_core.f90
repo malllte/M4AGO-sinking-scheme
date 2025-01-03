@@ -180,77 +180,87 @@ contains
     real(wp)    :: A_total
     real(wp)    :: V_solid
     real(wp)    :: Vdpfrac
+    real(wp)    :: check
 
     aggs%av_dp          = 0._wp
     aggs%av_rho_p       = 0._wp
     aggs%stickiness_agg = 0._wp
+    aggs%dmax_agg       = 0._wp
+    aggs%b_agg          = 0._wp
+    aggs%df_agg         = 0._wp
+    aggs%Re_crit_agg    = 0._wp
 
     A_total        = 0._wp
     V_solid        = 0._wp
     Vdpfrac        = 0._wp
+    check          = 0._wp
 
     ! ------ calc mean aggregate stickiness
     do ipp = 1,aggs%NPrimPartTypes
+       check   = check + aggs%n_pp(ipp)
        A_total = A_total + aggs%A_pp(ipp)
        aggs%stickiness_agg = aggs%stickiness_agg + aggs%A_pp(ipp)*aggs%stickiness_pp(ipp)
     enddo
-    aggs%stickiness_agg = aggs%stickiness_agg/(A_total+EPS_ONE)
 
-    ! primary particles surface weighted stickiness is mapped
-    ! on range between 0 and 1
-    stickiness_mapped = (aggs%stickiness_agg - stickiness_min) / (stickiness_max - stickiness_min)
+    ! Only if particles exist, perform the calculation
+    if (check > 0._wp) then
+      aggs%stickiness_agg = aggs%stickiness_agg/(A_total+EPS_ONE)
 
-    ! ------ calc fractal dimension
-    ! fractal dimension of aggregates is based on that mapped stickiness
-    aggs%df_agg = agg_df_max*exp(df_slope*stickiness_mapped)
+      ! primary particles surface weighted stickiness is mapped
+      ! on range between 0 and 1
+      stickiness_mapped = (aggs%stickiness_agg - stickiness_min) / (stickiness_max - stickiness_min)
 
-    ! ------ calc the aggregate number distribution slope
-    ! number distribution slope b is based on df
-    ! Slope is here positive defined (as n(d)~d^-b), so *-1 of
-    ! Jiang & Logan 1991: Fractal dimensions of aggregates
-    ! determined from steady-state size distributions.
-    ! Environ. Sci. Technol. 25, 2031-2038.
-    !
-    ! See also:
-    ! Hunt 1980: Prediction of oceanic particle size distributions
-    !            from coagulation and sedimentation mechanisms.
-    !
-    ! Additional assumptions made here:
-    ! b in Jiang & Logan     (used for       Re <   0.1: b=1
-    !                              for 0.1 < Re <  10  : b=0.871
-    !                              for 10  < Re < 100  : b=0.547)
-    ! is set to 0.871 as an 'average for our range of 0<Re<Re_crit'
-    ! D2=min(2,df(3d)) (Meakin 1988)
-    !
-    ! => Formulation in Jiang & Logan 1991:
-    ! slope = -0.5*(3+df+(2+df-D2)/(2-b)) reduces to:
-    !
-    ! careful: for df=1.5904: b_agg=2*df where w_s is undefined.
-    aggs%b_agg = 0.5_wp*(3._wp + aggs%df_agg                                                       &
+      ! ------ calc fractal dimension
+      ! fractal dimension of aggregates is based on that mapped stickiness
+      aggs%df_agg = agg_df_max*exp(df_slope*stickiness_mapped)
+
+      ! ------ calc the aggregate number distribution slope
+      ! number distribution slope b is based on df
+      ! Slope is here positive defined (as n(d)~d^-b), so *-1 of
+      ! Jiang & Logan 1991: Fractal dimensions of aggregates
+      ! determined from steady-state size distributions.
+      ! Environ. Sci. Technol. 25, 2031-2038.
+      !
+      ! See also:
+      ! Hunt 1980: Prediction of oceanic particle size distributions
+      !            from coagulation and sedimentation mechanisms.
+      !
+      ! Additional assumptions made here:
+      ! b in Jiang & Logan     (used for       Re <   0.1: b=1
+      !                              for 0.1 < Re <  10  : b=0.871
+      !                              for 10  < Re < 100  : b=0.547)
+      ! is set to 0.871 as an 'average for our range of 0<Re<Re_crit'
+      ! D2=min(2,df(3d)) (Meakin 1988)
+      !
+      ! => Formulation in Jiang & Logan 1991:
+      ! slope = -0.5*(3+df+(2+df-D2)/(2-b)) reduces to:
+      !
+      ! careful: for df=1.5904: b_agg=2*df where w_s is undefined.
+      aggs%b_agg = 0.5_wp*(3._wp + aggs%df_agg                                                     &
                         & + (2._wp + aggs%df_agg - min(2._wp, aggs%df_agg))/(2._wp - BJ2))
 
 
-    ! ----- calc primary particle mean diameter and mean density
-    ! primary particle mean diameter according to Bushell & Amal 1998, 2000
-    ! sum(n_i) not changing - can be pulled out and thus cancels out
-    do ipp = 1,aggs%NPrimPartTypes
-      aggs%av_dp   = aggs%av_dp   + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**3
-      Vdpfrac = Vdpfrac + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**aggs%df_agg
+      ! ----- calc primary particle mean diameter and mean density
+      ! primary particle mean diameter according to Bushell & Amal 1998, 2000
+      ! sum(n_i) not changing - can be pulled out and thus cancels out
+      do ipp = 1,aggs%NPrimPartTypes
+        aggs%av_dp   = aggs%av_dp   + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**3
+        Vdpfrac = Vdpfrac + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**aggs%df_agg
 
-      aggs%av_rho_p = aggs%av_rho_p + aggs%V_pp(ipp)*aggs%rho_pp(ipp)
-      V_solid  = V_solid  + aggs%V_pp(ipp)
-    enddo
-    aggs%av_dp    = (aggs%av_dp/Vdpfrac)**(1._wp/(3._wp - aggs%df_agg))
-    aggs%av_rho_p = aggs%av_rho_p/V_solid
-    !    aggs%av_dp    = (av_dp/(Vdpfrac+EPS_ONE))**(1._wp/(3._wp - df_agg))
-    !    aggs%av_rho_p = av_rho_p/(V_solid+EPS_ONE)
+        aggs%av_rho_p = aggs%av_rho_p + aggs%V_pp(ipp)*aggs%rho_pp(ipp)
+        V_solid  = V_solid  + aggs%V_pp(ipp)
+      enddo
+      aggs%av_dp    = (aggs%av_dp/Vdpfrac)**(1._wp/(3._wp - aggs%df_agg))
+      aggs%av_rho_p = aggs%av_rho_p/V_solid
+      !    aggs%av_dp    = (av_dp/(Vdpfrac+EPS_ONE))**(1._wp/(3._wp - df_agg))
+      !    aggs%av_rho_p = av_rho_p/(V_solid+EPS_ONE)
 
-    ! init Re_crit_agg - with a global value
-    aggs%Re_crit_agg = agg_Re_crit
+      ! init Re_crit_agg - with a global value
+      aggs%Re_crit_agg = agg_Re_crit
 
-    ! Calculate the maximum aggregate diameter (based on critical particle Reynolds number)
-    call max_agg_diam(aggs,agg_env)
-
+      ! Calculate the maximum aggregate diameter (based on critical particle Reynolds number)
+      call max_agg_diam(aggs,agg_env)
+    endif
   end subroutine aggregate_properties
 
   !=================================================================================================
@@ -268,8 +278,11 @@ contains
     type(aggregates),intent(inout)   :: aggs
     type(agg_environment),intent(in) :: agg_env
 
-    aggs%ws_aggregates = ws_Re(aggs,agg_env)
-
+    if (aggs%av_dp > 0._wp) then
+      aggs%ws_aggregates = ws_Re(aggs,agg_env)
+    else
+      aggs%ws_aggregates = 0._wp
+    endif
   end subroutine ws_Re_approx
 
   !=================================================================================================
@@ -443,13 +456,17 @@ contains
     type(aggregates),intent(in)      :: aggs
     type(agg_environment),intent(in) :: agg_env
 
-    ! Volume-weighted mean aggregate density
-    volweighted_agg_density = (aggs%av_rho_p-agg_env%rho_aq)*aggs%av_dp**(3._wp-aggs%df_agg)       &
+    if (aggs%av_dp > 0._wp) then
+      ! Volume-weighted mean aggregate density
+      volweighted_agg_density = (aggs%av_rho_p-agg_env%rho_aq)*aggs%av_dp**(3._wp-aggs%df_agg)     &
                             & *(4._wp-aggs%b_agg)*(aggs%dmax_agg**(1._wp+aggs%df_agg-aggs%b_agg)   &
                             &                  - aggs%av_dp**(1._wp+aggs%df_agg-aggs%b_agg))       &
                             &  / ((1._wp+aggs%df_agg-aggs%b_agg)                                   &
                             & *(aggs%dmax_agg**(4._wp-aggs%b_agg) -aggs%av_dp**(4._wp-aggs%b_agg)))&
                             & + agg_env%rho_aq
+    else
+      volweighted_agg_density=0._wp
+    endif
 
   end function volweighted_agg_density
 
@@ -458,13 +475,17 @@ contains
 
     type(aggregates),intent(in) :: aggs
 
-    ! Volume-weighted mean aggregate porosity
-    volweighted_agg_porosity =  1._wp - ((4._wp-aggs%b_agg)*aggs%av_dp**(3._wp-aggs%df_agg)        &
+    if (aggs%av_dp > 0._wp) then
+      ! Volume-weighted mean aggregate porosity
+      volweighted_agg_porosity =  1._wp - ((4._wp-aggs%b_agg)*aggs%av_dp**(3._wp-aggs%df_agg)      &
                              &         *(aggs%dmax_agg**(1._wp+aggs%df_agg-aggs%b_agg)             &
                              &                     - aggs%av_dp**(1._wp+aggs%df_agg-aggs%b_agg)))  &
                              &       /((1._wp+aggs%df_agg-aggs%b_agg)                              &
                              &                                 *(aggs%dmax_agg**(4._wp-aggs%b_agg) &
                              &                                   - aggs%av_dp**(4._wp-aggs%b_agg)))
+    else
+      volweighted_agg_porosity=0._wp
+    endif
 
   end function volweighted_agg_porosity
 
@@ -473,13 +494,16 @@ contains
 
     type(aggregates),intent(in) :: aggs
 
-    conc_weighted_mean_agg_diameter =  (1._wp + aggs%df_agg - aggs%b_agg)                          &
+    if (aggs%av_dp > 0._wp) then
+      conc_weighted_mean_agg_diameter =  (1._wp + aggs%df_agg - aggs%b_agg)                        &
                           &             / (2._wp + aggs%df_agg - aggs%b_agg)                       &
                           & *(aggs%dmax_agg**(2._wp + aggs%df_agg - aggs%b_agg)                    &
                           &                    - aggs%av_dp**(2._wp + aggs%df_agg - aggs%b_agg))   &
                           & / (aggs%dmax_agg**(1._wp+aggs%df_agg-aggs%b_agg)                       &
                           &                    - aggs%av_dp**(1._wp + aggs%df_agg-aggs%b_agg))
-
+    else
+      conc_weighted_mean_agg_diameter = 0._wp
+    endif
   end function conc_weighted_mean_agg_diameter
 
 
