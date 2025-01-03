@@ -92,8 +92,8 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       allocate(C_calc(1))
       allocate(C_dust(1))
 
-      C_det   = 1e-7
-      C_opal  = 0. !1e-8
+      C_det   = 0.!1e-7
+      C_opal  = 0.!1e-8
       C_calc  = 0. !1e-12
       C_dust  = 0. !1e-11
       ! Provide aggregates environment
@@ -101,6 +101,7 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       agg_env%mu     = dynvis
       ! ------ prepare primary particle information
       call prepare_primary_particles(C_det(1),C_opal(1),C_calc(1),C_dust(1),aggs,agg_env)
+
       ! ------ calculate aggregate properties from individual primary particle information
       call aggregate_properties(aggs, agg_env)
       ! ======== calculate the mean sinking velocity of aggregates =======
@@ -281,6 +282,7 @@ contains
     V_POM_cell        = 0._wp
     V_aq              = 0._wp
     rho_frustule      = 0._wp
+    stickiness_frustule = 0._wp
 
     ! number of opal frustules (/NUM_FAC)
     n_opal = C_opal*opalwei/rho_V_frustule_opal
@@ -290,18 +292,24 @@ contains
     ! detritus mass inside frustules
     cell_det_mass = max(0._wp,min(cell_pot_det_mass,C_det*det_mol2mass))
 
-    ! volume of detritus component in cell
-    V_POM_cell = (cell_det_mass/n_opal)/agg_org_dens
+    if (n_opal > 0._wp) then
+      ! volume of detritus component in cell
+      V_POM_cell = (cell_det_mass/n_opal)/agg_org_dens
 
-    ! if not detritus is available, water is added
-    V_aq = V_frustule_inner -  V_POM_cell
+      ! if not detritus is available, water is added
+      V_aq = V_frustule_inner -  V_POM_cell
 
-    ! density of the diatom frustules incl. opal, detritus and water
-    rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*agg_env%rho_aq)/V_dp_opal
+      ! density of the diatom frustules incl. opal, detritus and water
+      rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*agg_env%rho_aq)/V_dp_opal
+      rho_diatom = (rho_frustule + cell_det_mass/cell_pot_det_mass*rho_TEP)                          &
+                   /(1._wp + cell_det_mass/cell_pot_det_mass)
+      ! calc frustule stickiness
+      stickiness_frustule = cell_det_mass/(cell_pot_det_mass +EPS_ONE)*stickiness_TEP                &
+                               & + (1._wp - cell_det_mass/(cell_pot_det_mass + EPS_ONE))           &
+                               &   *stickiness_opal
+    endif
     ! mass of extra cellular detritus particles
     free_detritus = C_det*det_mol2mass  - cell_det_mass
-    rho_diatom = (rho_frustule + cell_det_mass/cell_pot_det_mass*rho_TEP)                          &
-                   /(1._wp + cell_det_mass/cell_pot_det_mass)
 
     ! number of primary particles
     n_det  = free_detritus/rho_V_dp_det  ! includes NUM_FAC
@@ -319,11 +327,6 @@ contains
     V_opal  = n_opal*V_dp_opal*NUM_FAC
     V_calc  = n_calc*V_dp_calc*NUM_FAC
     V_dust  = n_dust*V_dp_dust*NUM_FAC
-
-    ! calc frustule stickiness
-    stickiness_frustule = cell_det_mass/(cell_pot_det_mass +EPS_ONE)*stickiness_TEP                &
-                               & + (1._wp - cell_det_mass/(cell_pot_det_mass + EPS_ONE))           &
-                               &   *stickiness_opal
 
 
     ! IMPORTANT: the order requires to be the same for all information
