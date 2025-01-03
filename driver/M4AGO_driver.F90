@@ -1,3 +1,56 @@
+!>
+!! @par (c) Copyright
+!! This software is provided under:
+!!
+!! The 3-Clause BSD License
+!! SPDX short identifier: BSD-3-Clause
+!! See https://opensource.org/licenses/BSD-3-Clause
+!!
+!! (c) Copyright 2016-2021 MPI-M, Joeran Maerz, Irene Stemmler;
+!!     first published 2020
+!!
+!! Redistribution and use in source and binary forms, with or without
+!! modification, are permitted provided that the following conditions are met:
+!!
+!! 1. Redistributions of source code must retain the above copyright notice,
+!!    this list of conditions and the following disclaimer.
+!! 2. Redistributions in binary form must reproduce the above copyright notice,
+!!    this list of conditions and the following disclaimer in the documentation
+!!    and/or other materials provided with the distribution.
+!! 3. Neither the name of the copyright holder nor the names of its contributors
+!!    may be used to endorse or promote products derived from this software
+!!    without specific prior written permission.
+!!
+!! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+!! AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+!! IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+!! ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+!! LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+!! CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+!! SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+!! INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+!! CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+!! ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+!! POSSIBILITY OF SUCH DAMAGE.[7]
+!!
+!!
+!! -----------------------------------------------------------------------------
+!! -----------------------------------------------------------------------------
+!! @file M4AGO_driver.F90
+!! @brief Module for Marine Aggregates:
+!!        The Microstructure, Multiscale, Mechanistic, Marine Aggregates
+!!        in the Global Ocean (M4AGO) sinking scheme
+!!
+!! The M4AGO_driver module provides some test routines to improve and check
+!! the M4AGO code for robustness
+!!
+!! 2024 packaged as individual module (initially for iHAMOCC) by joeran maerz, UiB, Bergen
+!!
+!! -----------------------------------------------------------------------------
+!! -----------------------------------------------------------------------------
+!!
+!!
+
 program M4AGO_driver
 
 use mo_m4ago_kind,    only: wp
@@ -7,6 +60,8 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
                           & aggregate_properties, init_m4ago_core_parameters
 
 !use mo_m4ago_physics, only: mol_dyn_vis
+
+  implicit none
 
   ! ------------------------------------------------------------------------------------------------
   ! biogeochemistry model-specific parameters
@@ -66,9 +121,8 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
   ! Choose the test case to run
   ! Available cases:
   !    - single   : just test single concentration values
-  !    - Re_crit  : (envisaged) test sinking velocity with respect to critical particle Reynolds number
   character(100) :: testcase = 'single'
-  character(22)  :: sp = '                   '
+  character(22)  :: sp = '                   ' ! just some space for pretty printing
 
   ! integer i,j,k
 
@@ -147,7 +201,7 @@ contains
 
     implicit none
 
-    ! Primary particle sizes
+    ! Primary particle diameters
     dp_dust = 2.e-6_wp      ! [m] following the classical HAMOCC parametrization
     dp_det  = 4.e-6_wp      ! [m] not well defined
     dp_calc = 3.e-6_wp      ! [m] following Henderiks 2008, Henderiks & Pagani 2008
@@ -284,6 +338,7 @@ contains
 
     ! number of opal frustules (/NUM_FAC)
     n_opal = C_opal*opalwei/rho_V_frustule_opal
+
     ! maximum mass of detritus inside a frustule
     cell_pot_det_mass = n_opal*V_frustule_inner*agg_org_dens
 
@@ -291,21 +346,23 @@ contains
     cell_det_mass = max(0._wp,min(cell_pot_det_mass,C_det*det_mol2mass))
 
     if (n_opal > 0._wp) then
-      ! volume of detritus component in cell
+      ! volume of detritus component in diatom cell
       V_POM_cell = (cell_det_mass/n_opal)/agg_org_dens
 
-      ! if not detritus is available, water is added
+      ! if not enough detritus is available, water is added
       V_aq = V_frustule_inner -  V_POM_cell
 
       ! density of the diatom frustules incl. opal, detritus and water
       rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*agg_env%rho_aq)/V_dp_opal
       rho_diatom = (rho_frustule + cell_det_mass/cell_pot_det_mass*rho_TEP)                        &
                    /(1._wp + cell_det_mass/cell_pot_det_mass)
+
       ! calc frustule stickiness
       stickiness_frustule = cell_det_mass/(cell_pot_det_mass)*stickiness_TEP                       &
                                & + (1._wp - cell_det_mass/(cell_pot_det_mass))                     &
                                &   *stickiness_opal
     endif
+
     ! mass of extra cellular detritus particles
     free_detritus = C_det*det_mol2mass  - cell_det_mass
 
