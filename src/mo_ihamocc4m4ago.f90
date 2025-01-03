@@ -401,9 +401,7 @@ contains
     cell_pot_det_mass = n_opal*V_frustule_inner*agg_org_dens
 
     ! detritus mass inside frustules
-    cell_det_mass = min(cell_pot_det_mass, C_det*det_mol2mass - EPS_ONE)
-    ! better: cell_det_mass = max(0._wp,min(cell_pot_det_mass,C_det*det_mol2mass))
-
+    cell_det_mass = max(0._wp,min(cell_pot_det_mass,C_det*det_mol2mass))
 
     ! volume of detritus component in cell
     V_POM_cell = (cell_det_mass/n_opal)/agg_org_dens
