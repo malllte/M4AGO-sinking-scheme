@@ -174,29 +174,29 @@ contains
 
     implicit none
 
-    ! Primary particle sizes
-    dp_dust = 2.e-6_wp      ! following the classical HAMOCC parametrization
-    dp_det  = 4.e-6_wp      ! not well defined
-    dp_calc = 3.e-6_wp      ! following Henderiks 2008, Henderiks & Pagani 2008
-    dp_opal = 20.e-6_wp     ! mean frustule diameter of diatoms
+    ! Primary particle diameters
+    dp_dust = 2.e-6_wp      ! [m] following the classical HAMOCC parametrization
+    dp_det  = 4.e-6_wp      ! [m] not well defined
+    dp_calc = 3.e-6_wp      ! [m] following Henderiks 2008, Henderiks & Pagani 2008
+    dp_opal = 20.e-6_wp     ! [m] mean frustule diameter of diatoms
 
     ! Stickiness values - note that their relative values to each other matter!
-    stickiness_TEP    = 0.19_wp
-    stickiness_det    = 0.1_wp
-    stickiness_opal   = 0.08_wp
-    stickiness_calc   = 0.09_wp
-    stickiness_dust   = 0.07_wp
+    stickiness_TEP    = 0.19_wp ! [-] range 0-1
+    stickiness_det    = 0.1_wp  ! [-] range 0-1
+    stickiness_opal   = 0.08_wp ! [-] range 0-1
+    stickiness_calc   = 0.09_wp ! [-] range 0-1
+    stickiness_dust   = 0.07_wp ! [-] range 0-1
 
     ! Minimum and maximum aggregate fractal dimension
-    agg_df_min        = 1.6_wp
-    agg_df_max        = 2.4_wp
+    agg_df_min        = 1.6_wp ! [-]
+    agg_df_max        = 2.4_wp ! [-]
 
     ! Density of primary particles
-    rho_TEP           = 800._wp ! 700.-840. kg/m^3 Azetsu-Scott & Passow 2004
-    agg_org_dens      = 1100._wp ! detritus density - don't use orgdens to avoid negative ws
+    rho_TEP           = 800._wp  ! [kg/m^3] 700.-840. kg/m^3 Azetsu-Scott & Passow 2004
+    agg_org_dens      = 1100._wp ! [kg/m^3] detritus density - don't use orgdens to avoid negative ws
 
-    ! Critical particle Reynolds number for limiting nr-distribution
-    agg_Re_crit       = 20._wp
+    ! Critical particle Reynolds number (based on diameter) for limiting nr-distribution
+    agg_Re_crit       = 20._wp ! [-]
 
   end subroutine init_m4ago_nml_params
 
@@ -416,6 +416,7 @@ contains
       rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*agg_env%rho_aq)/V_dp_opal
       rho_diatom = (rho_frustule + cell_det_mass/cell_pot_det_mass*rho_TEP)                        &
                    /(1._wp + cell_det_mass/cell_pot_det_mass)
+
       ! calc frustule stickiness
       stickiness_frustule = cell_det_mass/(cell_pot_det_mass)*stickiness_TEP                       &
                                & + (1._wp - cell_det_mass/(cell_pot_det_mass))                     &
