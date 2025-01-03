@@ -70,8 +70,9 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
   !    - single   : just test single concentration values
   !    - Re_crit  : (envisaged) test sinking velocity with respect to critical particle Reynolds number
   character(100) :: testcase = 'single'
+  character(22)  :: sp = '                   '
 
-  integer i,j,k
+  ! integer i,j,k
 
   call init_m4ago_nml_params
   call init_m4ago_params
@@ -92,7 +93,7 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       allocate(C_dust(1))
 
       C_det   = 1e-7
-      C_opal  = 1e-8
+      C_opal  = 0. !1e-8
       C_calc  = 0. !1e-12
       C_dust  = 0. !1e-11
       ! Provide aggregates environment
@@ -105,6 +106,15 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       ! ======== calculate the mean sinking velocity of aggregates =======
       call ws_Re_approx(aggs, agg_env)
 
+      print*,'Primary particle types                 (#)', aggs%NPrimPartTypes
+      print*,'                                             ','dust',sp,'calc',sp,'det ',sp,'opal'
+      print*,'Primary particles diameter           (mum)', aggs%dp_pp*1e6_wp
+      print*,'Primary particles density          (kg/m3)', aggs%rho_pp
+      print*,'Number of primary particles            (#)', aggs%n_pp*NUM_FAC
+      print*,'Surface area of primary particles     (m2)', aggs%A_pp
+      print*,'Volume of primary particles           (m3)', aggs%V_pp/NUM_FAC
+      print*,'Stickiness of primary particles        (-)', aggs%stickiness_pp
+      print*,'-----------------------------------------------------------------'
       print*,'Maximum diameter                      (cm)', aggs%dmax_agg*100._wp
       print*,'Frustule stickiness                    (-)', aggs%stickiness_frustule
       print*,'Aggregate stickiness                   (-)', aggs%stickiness_agg
@@ -114,9 +124,9 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       print*,'Aggregate number distribution slope    (-)', aggs%b_agg
       print*,'Sinking velocity                     (m/d)', aggs%ws_aggregates*86400._wp
       print*,'-----------------------------------------------------------------'
-      print*,'Conc.-weighted mean agg. diam.       (mum)',conc_weighted_mean_agg_diameter(aggs)*1e6_wp
-      print*,'Volume-weighted aggregate density  (kg/m3)',volweighted_agg_density(aggs,agg_env)
-      print*,'Volume-weighted aggregate porosity     (-)',volweighted_agg_porosity(aggs)
+      print*,'Conc.-weighted mean agg. diam.       (mum)', conc_weighted_mean_agg_diameter(aggs)*1e6_wp
+      print*,'Volume-weighted aggregate density  (kg/m3)', volweighted_agg_density(aggs,agg_env)
+      print*,'Volume-weighted aggregate porosity     (-)', volweighted_agg_porosity(aggs)
       print*,'-----------------------------------------------------------------'
       print*,'-----------------------------------------------------------------'
 
@@ -231,7 +241,7 @@ contains
     type(agg_environment),intent(in) :: agg_env
 
     real(wp) :: n_det,n_opal,n_calc,n_dust         ! total primary particle number (#)
-    real(wp) :: A_dust,A_det,A_calc,A_opal,A_total ! total surface area of primary particles per unit volume (L^2/L^3)
+    real(wp) :: A_dust,A_det,A_calc,A_opal         ! total surface area of primary particles per unit volume (L^2/L^3)
     real(wp) :: V_det,V_opal,V_calc,V_dust,V_solid ! total volume of primary particles in a unit volume (L^3/L^3)
 
     real(wp) :: cell_det_mass                      ! mass of detritus material in diatoms
@@ -288,9 +298,8 @@ contains
     ! if not detritus is available, water is added
     V_aq = V_frustule_inner -  V_POM_cell
 
-    ! density of the diatom frsutules incl. opal, detritus and water
+    ! density of the diatom frustules incl. opal, detritus and water
     rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*agg_env%rho_aq)/V_dp_opal
-
     ! mass of extra cellular detritus particles
     free_detritus = C_det*det_mol2mass  - cell_det_mass
     rho_diatom = (rho_frustule + cell_det_mass/cell_pot_det_mass*rho_TEP)                          &
