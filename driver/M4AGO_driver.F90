@@ -43,8 +43,6 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
   real(wp) :: V_frustule_opal                          ! volume of opal shell material (L^3)
   real(wp) :: rho_V_frustule_opal                      ! mass of frustule material (M)
 
-  real(wp),parameter :: eps_one = epsilon(1._wp)
-
   ! Parameter for M4AGO core
   integer, parameter    :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
   type(agg_environment) :: agg_env
@@ -92,8 +90,8 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       allocate(C_calc(1))
       allocate(C_dust(1))
 
-      C_det   = 0.!1e-7
-      C_opal  = 0.!1e-8
+      C_det   = 1e-7
+      C_opal  = 1e-8
       C_calc  = 0. !1e-12
       C_dust  = 0. !1e-11
       ! Provide aggregates environment
@@ -301,11 +299,11 @@ contains
 
       ! density of the diatom frustules incl. opal, detritus and water
       rho_frustule = (rho_V_frustule_opal + cell_det_mass/n_opal + V_aq*agg_env%rho_aq)/V_dp_opal
-      rho_diatom = (rho_frustule + cell_det_mass/cell_pot_det_mass*rho_TEP)                          &
+      rho_diatom = (rho_frustule + cell_det_mass/cell_pot_det_mass*rho_TEP)                        &
                    /(1._wp + cell_det_mass/cell_pot_det_mass)
       ! calc frustule stickiness
-      stickiness_frustule = cell_det_mass/(cell_pot_det_mass +EPS_ONE)*stickiness_TEP                &
-                               & + (1._wp - cell_det_mass/(cell_pot_det_mass + EPS_ONE))           &
+      stickiness_frustule = cell_det_mass/(cell_pot_det_mass)*stickiness_TEP                       &
+                               & + (1._wp - cell_det_mass/(cell_pot_det_mass))                     &
                                &   *stickiness_opal
     endif
     ! mass of extra cellular detritus particles
