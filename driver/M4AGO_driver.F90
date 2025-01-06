@@ -197,7 +197,7 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       call print_information(aggs,agg_env)
 
     case default
-      print*, 'Invalid test case'
+      print*, '======================== Invalid test case ======================'
 
    end select
 
