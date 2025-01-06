@@ -109,7 +109,7 @@ contains
     ! For extremely high temperatures, the formulation turns negative. We here introduce a minimum
     ! value for the viscosity, that refers to ca. 10 dbar, 45 degC and 0 psu of the equation above
     ! which would be ca.: 0.0004277485639235001 kg/(m*s)
-    mol_dyn_vis = max(0.00043, mol_dyn_vis)
+    mol_dyn_vis = max(0.00043_wp, mol_dyn_vis)
 
 
   end function mol_dyn_vis
