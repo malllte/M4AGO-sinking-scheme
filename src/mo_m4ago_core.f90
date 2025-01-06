@@ -362,66 +362,32 @@ contains
     type(agg_environment),intent(in) :: agg_env
 
     ! Local
-    real(wp) :: d_Re01, d_Re10, d_low, ws_agg_ints
+    real(wp) :: d_Re01, d_Re10,wsints
 
-    ! for Re-dependent, it should always be Re_crit_agg>10
+    ! for Re-dependent, it should always be Re_crit_agg>10 (assumption in dmax calculation)
     ! for shear-driven break-up, check against integration bounds
-    ! calc integration limits for Re-dependent sinking:
+    ! calc integration limits (diameters) for Re-dependent sinking:
     ! Re=0.1
     d_Re01 = get_dRe(aggs,AJ1, BJ1, 0.1_wp,agg_env)
     ! Re=10
     d_Re10 = get_dRe(aggs,AJ2, BJ2, 10._wp,agg_env)
-    d_low  = aggs%av_dp ! (initial) lower bound of integration
 
-    ws_agg_ints = 0._wp
-    if(aggs%dmax_agg >= d_Re01)then ! Re > 0.1
-                                       ! - collect full range up to
-                                       ! 0.1, (dp->d_Re1) and set lower bound to
-                                       ! Re=0.1 val
-                                       ! aj=AJ1, bj=1
-        ws_agg_ints = get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, d_Re01,agg_env)
-        d_low = d_Re01
+    wsints = 0._wp
+
+    ! assuming dmax_agg > av_dp and sum up the numerator integrals in Eq. 20
+    wsints = get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, min(aggs%dmax_agg,d_Re01),agg_env)
+    if (aggs%dmax_agg > d_Re01) then
+      wsints = wsints +get_ws_agg_integral(aggs,AJ2, BJ2, d_Re01, min(aggs%dmax_agg,d_Re10),agg_env)
     endif
-
-    if(aggs%dmax_agg >= d_Re10)then ! Re > 10
-                                         ! - collect full range Re=0.1-10 (d_Re1-> d_Re2)
-                                         ! and set lower bound to
-                                         ! Re=10 val
-                                         ! aj=AJ2, bj=0.871
-        ws_agg_ints = ws_agg_ints  + get_ws_agg_integral(aggs,AJ2, BJ2, d_Re01, d_Re10, agg_env)
-        d_low = d_Re10
-    endif
-
-    if(d_low < d_Re01) then ! Re<0.1 and dmax_agg < d_Re1
-      ws_agg_ints = get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, aggs%dmax_agg, agg_env)
-    else if (d_low < d_Re10) then ! Re>0.1 and dmax_agg < d_Re10
-      ws_agg_ints = ws_agg_ints + get_ws_agg_integral(aggs,AJ2, BJ2, d_low, aggs%dmax_agg, agg_env)
-    else ! Re > 10, aj=AJ3, bj=BJ3
-      ws_agg_ints = ws_agg_ints + get_ws_agg_integral(aggs,AJ3, BJ3, d_low, aggs%dmax_agg,agg_env)
+    if (aggs%dmax_agg > d_Re10) then
+      wsints = wsints +get_ws_agg_integral(aggs,AJ3, BJ3, d_Re10,aggs%dmax_agg,agg_env)
     endif
 
     ! concentration-weighted mean sinking velocity
-    ws_Re = (ws_agg_ints                                                                           &
+    ws_Re = wsints                                                                                 &
             & /((aggs%dmax_agg**(1._wp + aggs%df_agg - aggs%b_agg)                                 &
             & - aggs%av_dp**(1._wp + aggs%df_agg - aggs%b_agg))                                    &
-            & / (1._wp + aggs%df_agg - aggs%b_agg)))  ! (m/s)
-
-
-!   ! NOTE: TESTING ONLY - for fixed dmax - Re-crit_agg dependency
-!    if (aggs%Re_crit_agg <=0.1_wp) then
-!      ws_Re =   get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, aggs%dmax_agg,agg_env)
-!    else if (aggs%Re_crit_agg <=10._wp) then
-!      ws_Re =   get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, d_Re01,agg_env) &
-!            & + get_ws_agg_integral(aggs,AJ2, BJ2, d_Re01, aggs%dmax_agg, agg_env)
-!    else
-!      ws_Re =   get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, d_Re01,agg_env) &
-!            & + get_ws_agg_integral(aggs,AJ2, BJ2, d_Re01, d_Re10, agg_env) &
-!            & + get_ws_agg_integral(aggs,AJ3, BJ3, d_Re10, aggs%dmax_agg,agg_env)
-!    endif
-!    ws_Re = ws_Re/((aggs%dmax_agg**(1._wp + aggs%df_agg - aggs%b_agg)                             &
-!          & - aggs%av_dp**(1._wp + aggs%df_agg - aggs%b_agg))                                     &
-!          & / (1._wp + aggs%df_agg - aggs%b_agg))  ! (m/s)
-
+            & / (1._wp + aggs%df_agg - aggs%b_agg))  ! (m/s)
 
   end function ws_Re
 
@@ -436,7 +402,7 @@ contains
     type(aggregates),intent(inout)   :: aggs
     type(agg_environment),intent(in) :: agg_env
 
-    ! base on analytical Jiang approximation
+    ! based on analytical Jiang approximation
     aggs%dmax_agg   = max_agg_diam_white(aggs,agg_env)
 
   end subroutine max_agg_diam
