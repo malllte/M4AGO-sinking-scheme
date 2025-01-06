@@ -131,7 +131,6 @@ module mo_m4ago_core
   real(wp), parameter :: BJ3 = 0.547_wp
 
   ! Helping parameters
-  real(wp), parameter :: EPS_ONE   = EPSILON(1._wp)
   real(wp), parameter :: ONE_SIXTH = 1._wp/6._wp
   real(wp), parameter :: PI        = 3.141592654_wp
 
@@ -204,7 +203,7 @@ contains
 
     ! Only if particles exist, perform the calculation
     if (aggs%n_pptotal > 0._wp) then
-      aggs%stickiness_agg = aggs%stickiness_agg/(A_total+EPS_ONE)
+      aggs%stickiness_agg = aggs%stickiness_agg/A_total
 
       ! primary particles surface weighted stickiness is mapped
       ! on range between 0 and 1
