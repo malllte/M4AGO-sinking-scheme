@@ -97,7 +97,7 @@ module mo_m4ago_core
     real(wp),dimension(:), allocatable :: V_pp          ! total volume of each primary particle type (L^3/L^3)
   end type aggregates
 
-  ! type agg_environment holds information on the local environemnt of the aggregtes
+  ! type agg_environment holds information on the local environment of the aggregtes
   type, public ::agg_environment
     real(wp) :: mu                            ! molecular dynamic viscosity
     real(wp) :: rho_aq                        ! density of surrounding water
@@ -241,7 +241,8 @@ contains
 
       ! ----- calc primary particle mean diameter and mean density
       ! primary particle mean diameter according to Bushell & Amal 1998, 2000
-      ! sum(n_i) not changing - can be pulled out and thus cancels out
+      ! sum(n_i) not changing
+      ! previously introduced numerical factor (NUMFAC) can be pulled out and thus cancels out
       do ipp = 1,aggs%NPrimPartTypes
         aggs%av_dp   = aggs%av_dp   + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**3
         Vdpfrac = Vdpfrac + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**aggs%df_agg
@@ -290,6 +291,7 @@ contains
     !!
 
     implicit none
+
     ! Arguments
     type(aggregates),intent(in)      :: aggs
     type(agg_environment),intent(in) :: agg_env
