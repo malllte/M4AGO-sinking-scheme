@@ -162,7 +162,6 @@ module mo_ihamocc4m4ago
 
   ! Internally used parameters and values
   real(wp), parameter :: NUM_FAC = 1.e9_wp             ! factor to avoid numerical precision problems
-  real(wp), parameter :: EPS_ONE = EPSILON(1._wp)
 
 contains
 
@@ -269,13 +268,14 @@ contains
     integer :: i,j,k
     type(agg_environment) :: agg_env
     type(aggregates)      :: aggs
+
+    ! Allocate memory for primary particle types information
     allocate(aggs%dp_pp(NPrimPartTypes))
     allocate(aggs%rho_pp(NPrimPartTypes))
     allocate(aggs%stickiness_pp(NPrimPartTypes))
     allocate(aggs%n_pp(NPrimPartTypes))
     allocate(aggs%A_pp(NPrimPartTypes))
     allocate(aggs%V_pp(NPrimPartTypes))
-
 
     ! get pressure
     call calc_pressure(kpie, kpje, kpke,kbnd, pddpo, omask)
@@ -522,7 +522,7 @@ contains
     do k = 1,kpke
       do j = 1,kpje
         do i = 1,kpie
-          if(omask(i,j) > 0.5_wp .and. pddpo(i,j,k) .gt. dp_min) then
+          if(omask(i,j) > 0.5_wp .and. pddpo(i,j,k) > dp_min) then
             m4ago_ppo(i,j,k) = 1e5_wp * ptiestu(i,j,k)*98060._wp*1.027e-6_wp ! pressure in unit Pa, 98060 = onem
           endif
         enddo
@@ -552,13 +552,14 @@ contains
     real, intent(in) :: pddpo(kpie,kpje,kpke) !< size of scalar grid cell (3rd dimension) [m]
     real, intent(in) :: omask(kpie,kpje)      !< ocean mask
     real, intent(in) :: ptho(1-kbnd:kpie+kbnd,1-kbnd:kpje+kbnd,kpke) !< potential temperature [deg C]
-    real, intent(in) :: psao(1-kbnd:kpie+kbnd,1-kbnd:kpje+kbnd,kpke)  !< salinity [psu.].
+    real, intent(in) :: psao(1-kbnd:kpie+kbnd,1-kbnd:kpje+kbnd,kpke) !< salinity [psu.].
     real, intent(in) :: ppo(kpie,kpje,kpke)  !< pressure [Pa].
 
     ! Local variables
-    real(wp)    :: press_val  ! Pascal/rho -> dbar
-    real(wp)    :: ptho_val,psao_val
-    integer :: i,j,k,kch
+    real(wp) :: press_val  ! Pascal/rho -> dbar
+    real(wp) :: ptho_val,psao_val
+    integer  :: i,j,k,kch
+
     kch = 0
     !$OMP PARALLEL DO PRIVATE(i,j,k,press_val,ptho_val,psao_val,kch)
     do j = 1,kpje
