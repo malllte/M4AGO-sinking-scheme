@@ -121,10 +121,10 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
   ! Choose the test case to run
   ! Available cases:
   !    - single   : just test single concentration values
-  character(100) :: testcase = 'single'
-  character(22)  :: sp = '                   ' ! just some space for pretty printing
+  !    - Recrit   : test single concentration values with varying Recrit values
+  character(100) :: testcase = 'Recrit'
 
-  ! integer i,j,k
+  integer i
 
   call init_m4ago_nml_params
   call init_m4ago_params
@@ -159,29 +159,42 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       ! ======== calculate the mean sinking velocity of aggregates =======
       call ws_Re_approx(aggs, agg_env)
 
-      print*,'Primary particle types                 (#)', aggs%NPrimPartTypes
-      print*,'                                             ','dust',sp,'calc',sp,'det ',sp,'opal'
-      print*,'Primary particles diameter           (mum)', aggs%dp_pp*1e6_wp
-      print*,'Primary particles density          (kg/m3)', aggs%rho_pp
-      print*,'Number of primary particles            (#)', aggs%n_pp*NUM_FAC
-      print*,'Surface area of primary particles     (m2)', aggs%A_pp
-      print*,'Volume of primary particles           (m3)', aggs%V_pp/NUM_FAC
-      print*,'Stickiness of primary particles        (-)', aggs%stickiness_pp
-      print*,'-----------------------------------------------------------------'
-      print*,'Maximum diameter                      (cm)', aggs%dmax_agg*100._wp
-      print*,'Frustule stickiness                    (-)', aggs%stickiness_frustule
-      print*,'Aggregate stickiness                   (-)', aggs%stickiness_agg
-      print*,'Average primary particle diameter    (mum)', aggs%av_dp*1e6
-      print*,'Average primary particle density   (kg/m3)', aggs%av_rho_p
-      print*,'Fractal dimension                      (-)', aggs%df_agg
-      print*,'Aggregate number distribution slope    (-)', aggs%b_agg
-      print*,'Sinking velocity                     (m/d)', aggs%ws_aggregates*86400._wp
-      print*,'-----------------------------------------------------------------'
-      print*,'Conc.-weighted mean agg. diam.       (mum)', conc_weighted_mean_agg_diameter(aggs)*1e6_wp
-      print*,'Volume-weighted aggregate density  (kg/m3)', volweighted_agg_density(aggs,agg_env)
-      print*,'Volume-weighted aggregate porosity     (-)', volweighted_agg_porosity(aggs)
-      print*,'-----------------------------------------------------------------'
-      print*,'-----------------------------------------------------------------'
+      call print_information(aggs,agg_env)
+
+    case ('Recrit')
+      print*, '========================  Running test case: Recrit ============='
+      allocate(C_det(1))
+      allocate(C_opal(1))
+      allocate(C_calc(1))
+      allocate(C_dust(1))
+
+      C_det   = 1e-7
+      C_opal  = 1e-8
+      C_calc  = 0. !1e-12
+      C_dust  = 0. !1e-11
+
+      ! Provide aggregates environment
+      agg_env%rho_aq = rho_aq
+      agg_env%mu     = dynvis
+
+      ! ------ prepare primary particle information
+      call prepare_primary_particles(C_det(1),C_opal(1),C_calc(1),C_dust(1),aggs,agg_env)
+
+      do i=0,20
+        ! Change the critical aggregate Reynolds number for break up
+        ! and calculate the sinking velocity, etc.
+        agg_Re_crit = 0.099_wp + float(i)/(20._wp/(20._wp-0.099_wp))
+        call init_m4ago_core_parameters(agg_Re_crit,agg_df_min,agg_df_max,stickiness_min,stickiness_max)
+
+        ! ------ calculate aggregate properties from individual primary particle information
+        call aggregate_properties(aggs, agg_env)
+        ! ======== calculate the mean sinking velocity of aggregates =======
+        call ws_Re_approx(aggs, agg_env)
+
+        print*,aggs%Re_crit_agg,aggs%dmax_agg*100._wp,aggs%ws_aggregates*86400._wp
+      end do
+
+      call print_information(aggs,agg_env)
 
     case default
       print*, 'Invalid test case'
@@ -193,6 +206,40 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
 
 
 contains
+
+  subroutine print_information(aggs,agg_env)
+
+    implicit none
+
+    type(aggregates),intent(in)   :: aggs
+    type(agg_environment),intent(in) :: agg_env
+
+    character(22)  :: sp = '                   ' ! just some space for pretty printing
+
+    print*,'Primary particle types                 (#)', aggs%NPrimPartTypes
+    print*,'                                             ','dust',sp,'calc',sp,'det ',sp,'opal'
+    print*,'Primary particles diameter           (mum)', aggs%dp_pp*1e6_wp
+    print*,'Primary particles density          (kg/m3)', aggs%rho_pp
+    print*,'Number of primary particles            (#)', aggs%n_pp*NUM_FAC
+    print*,'Surface area of primary particles     (m2)', aggs%A_pp
+    print*,'Volume of primary particles           (m3)', aggs%V_pp/NUM_FAC
+    print*,'Stickiness of primary particles        (-)', aggs%stickiness_pp
+    print*,'-----------------------------------------------------------------'
+    print*,'Maximum diameter                      (cm)', aggs%dmax_agg*100._wp
+    print*,'Frustule stickiness                    (-)', aggs%stickiness_frustule
+    print*,'Aggregate stickiness                   (-)', aggs%stickiness_agg
+    print*,'Average primary particle diameter    (mum)', aggs%av_dp*1e6
+    print*,'Average primary particle density   (kg/m3)', aggs%av_rho_p
+    print*,'Fractal dimension                      (-)', aggs%df_agg
+    print*,'Aggregate number distribution slope    (-)', aggs%b_agg
+    print*,'Sinking velocity                     (m/d)', aggs%ws_aggregates*86400._wp
+    print*,'-----------------------------------------------------------------'
+    print*,'Conc.-weighted mean agg. diam.       (mum)', conc_weighted_mean_agg_diameter(aggs)*1e6_wp
+    print*,'Volume-weighted aggregate density  (kg/m3)', volweighted_agg_density(aggs,agg_env)
+    print*,'Volume-weighted aggregate porosity     (-)', volweighted_agg_porosity(aggs)
+    print*,'-----------------------------------------------------------------'
+    print*,'-----------------------------------------------------------------'
+  end subroutine print_information
 
   subroutine init_m4ago_nml_params
     !>
