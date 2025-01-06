@@ -122,7 +122,7 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
   ! Available cases:
   !    - single   : just test single concentration values
   !    - Recrit   : test single concentration values with varying Recrit values
-  character(100) :: testcase = 'Recrit'
+  character(100) :: testcase = 'single'
 
   integer i
 
@@ -144,10 +144,10 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
       allocate(C_calc(1))
       allocate(C_dust(1))
 
-      C_det   = 1e-7
-      C_opal  = 1e-8
-      C_calc  = 0. !1e-12
-      C_dust  = 0. !1e-11
+      C_det   = 1e-7_wp
+      C_opal  = 1e-8_wp
+      C_calc  = 0._wp !1e-12_wp
+      C_dust  = 0._wp !1e-11_wp
       ! Provide aggregates environment
       agg_env%rho_aq = rho_aq
       agg_env%mu     = dynvis

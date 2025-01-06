@@ -88,6 +88,7 @@ module mo_m4ago_core
     real(wp) :: stickiness_frustule                  ! opal frustule stickiness
     real(wp) :: Re_crit_agg                          ! critical diameter-based particle Reynolds number for fragmentation
     real(wp) :: ws_aggregates                        ! mean aggregate sinking velocity (m/s)
+    real(wp) :: n_pptotal                            ! total number of primary particles (#/L^3)
     real(wp),dimension(:), allocatable :: dp_pp         ! primary particle diameter of each primary particle type (L)
     real(wp),dimension(:), allocatable :: rho_pp        ! primary particle density of each primary particle type (M/L^3)
     real(wp),dimension(:), allocatable :: stickiness_pp ! stickiness of each primary particle type (-)
@@ -180,7 +181,6 @@ contains
     real(wp)    :: A_total
     real(wp)    :: V_solid
     real(wp)    :: Vdpfrac
-    real(wp)    :: check
 
     aggs%av_dp          = 0._wp
     aggs%av_rho_p       = 0._wp
@@ -189,21 +189,21 @@ contains
     aggs%b_agg          = 0._wp
     aggs%df_agg         = 0._wp
     aggs%Re_crit_agg    = 0._wp
+    aggs%n_pptotal      = 0._wp
 
     A_total        = 0._wp
     V_solid        = 0._wp
     Vdpfrac        = 0._wp
-    check          = 0._wp
 
     ! ------ calc mean aggregate stickiness
     do ipp = 1,aggs%NPrimPartTypes
-       check   = check + aggs%n_pp(ipp)
+       aggs%n_pptotal    = aggs%n_pptotal + aggs%n_pp(ipp)
        A_total = A_total + aggs%A_pp(ipp)
        aggs%stickiness_agg = aggs%stickiness_agg + aggs%A_pp(ipp)*aggs%stickiness_pp(ipp)
     enddo
 
     ! Only if particles exist, perform the calculation
-    if (check > 0._wp) then
+    if (aggs%n_pptotal > 0._wp) then
       aggs%stickiness_agg = aggs%stickiness_agg/(A_total+EPS_ONE)
 
       ! primary particles surface weighted stickiness is mapped
@@ -252,8 +252,6 @@ contains
       enddo
       aggs%av_dp    = (aggs%av_dp/Vdpfrac)**(1._wp/(3._wp - aggs%df_agg))
       aggs%av_rho_p = aggs%av_rho_p/V_solid
-      !    aggs%av_dp    = (av_dp/(Vdpfrac+EPS_ONE))**(1._wp/(3._wp - df_agg))
-      !    aggs%av_rho_p = av_rho_p/(V_solid+EPS_ONE)
 
       ! init Re_crit_agg - with a global value
       aggs%Re_crit_agg = agg_Re_crit
@@ -440,7 +438,7 @@ contains
     type(aggregates),intent(in)      :: aggs
     type(agg_environment),intent(in) :: agg_env
 
-    if (aggs%av_dp > 0._wp) then
+    if (aggs%n_pptotal > 0._wp) then
       ! Volume-weighted mean aggregate density
       volweighted_agg_density = (aggs%av_rho_p-agg_env%rho_aq)*aggs%av_dp**(3._wp-aggs%df_agg)     &
                             & *(4._wp-aggs%b_agg)*(aggs%dmax_agg**(1._wp+aggs%df_agg-aggs%b_agg)   &
@@ -449,7 +447,7 @@ contains
                             & *(aggs%dmax_agg**(4._wp-aggs%b_agg) -aggs%av_dp**(4._wp-aggs%b_agg)))&
                             & + agg_env%rho_aq
     else
-      volweighted_agg_density=0._wp
+      volweighted_agg_density = 0._wp
     endif
 
   end function volweighted_agg_density
@@ -459,7 +457,7 @@ contains
 
     type(aggregates),intent(in) :: aggs
 
-    if (aggs%av_dp > 0._wp) then
+    if (aggs%n_pptotal > 0._wp) then
       ! Volume-weighted mean aggregate porosity
       volweighted_agg_porosity =  1._wp - ((4._wp-aggs%b_agg)*aggs%av_dp**(3._wp-aggs%df_agg)      &
                              &         *(aggs%dmax_agg**(1._wp+aggs%df_agg-aggs%b_agg)             &
@@ -468,7 +466,7 @@ contains
                              &                                 *(aggs%dmax_agg**(4._wp-aggs%b_agg) &
                              &                                   - aggs%av_dp**(4._wp-aggs%b_agg)))
     else
-      volweighted_agg_porosity=0._wp
+      volweighted_agg_porosity = 1._wp
     endif
 
   end function volweighted_agg_porosity
@@ -478,7 +476,7 @@ contains
 
     type(aggregates),intent(in) :: aggs
 
-    if (aggs%av_dp > 0._wp) then
+    if (aggs%n_pptotal > 0._wp) then
       conc_weighted_mean_agg_diameter =  (1._wp + aggs%df_agg - aggs%b_agg)                        &
                           &             / (2._wp + aggs%df_agg - aggs%b_agg)                       &
                           & *(aggs%dmax_agg**(2._wp + aggs%df_agg - aggs%b_agg)                    &
