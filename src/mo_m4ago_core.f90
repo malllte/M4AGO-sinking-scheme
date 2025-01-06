@@ -371,7 +371,7 @@ contains
     d_Re01 = get_dRe(aggs,AJ1, BJ1, 0.1_wp,agg_env)
     ! Re=10
     d_Re10 = get_dRe(aggs,AJ2, BJ2, 10._wp,agg_env)
-    d_low  = aggs%av_dp
+    d_low  = aggs%av_dp ! (initial) lower bound of integration
 
     ws_agg_ints = 0._wp
     if(aggs%dmax_agg >= d_Re01)then ! Re > 0.1
@@ -392,11 +392,12 @@ contains
         d_low = d_Re10
     endif
 
-    if(d_low < d_Re01)then ! Re<0.1 and Lmax < d_Re1
-        ws_agg_ints = get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, aggs%dmax_agg, agg_env)
+    if(d_low < d_Re01) then ! Re<0.1 and dmax_agg < d_Re1
+      ws_agg_ints = get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, aggs%dmax_agg, agg_env)
+    else if (d_low < d_Re10) then ! Re>0.1 and dmax_agg < d_Re10
+      ws_agg_ints = ws_agg_ints + get_ws_agg_integral(aggs,AJ2, BJ2, d_low, aggs%dmax_agg, agg_env)
     else ! Re > 10, aj=AJ3, bj=BJ3
-        ws_agg_ints = ws_agg_ints                                                                  &
-                      + get_ws_agg_integral(aggs,AJ3, BJ3, d_low, aggs%dmax_agg,agg_env)
+      ws_agg_ints = ws_agg_ints + get_ws_agg_integral(aggs,AJ3, BJ3, d_low, aggs%dmax_agg,agg_env)
     endif
 
     ! concentration-weighted mean sinking velocity
@@ -404,6 +405,23 @@ contains
             & /((aggs%dmax_agg**(1._wp + aggs%df_agg - aggs%b_agg)                                 &
             & - aggs%av_dp**(1._wp + aggs%df_agg - aggs%b_agg))                                    &
             & / (1._wp + aggs%df_agg - aggs%b_agg)))  ! (m/s)
+
+
+!   ! NOTE: TESTING ONLY - for fixed dmax - Re-crit_agg dependency
+!    if (aggs%Re_crit_agg <=0.1_wp) then
+!      ws_Re =   get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, aggs%dmax_agg,agg_env)
+!    else if (aggs%Re_crit_agg <=10._wp) then
+!      ws_Re =   get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, d_Re01,agg_env) &
+!            & + get_ws_agg_integral(aggs,AJ2, BJ2, d_Re01, aggs%dmax_agg, agg_env)
+!    else
+!      ws_Re =   get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, d_Re01,agg_env) &
+!            & + get_ws_agg_integral(aggs,AJ2, BJ2, d_Re01, d_Re10, agg_env) &
+!            & + get_ws_agg_integral(aggs,AJ3, BJ3, d_Re10, aggs%dmax_agg,agg_env)
+!    endif
+!    ws_Re = ws_Re/((aggs%dmax_agg**(1._wp + aggs%df_agg - aggs%b_agg)                             &
+!          & - aggs%av_dp**(1._wp + aggs%df_agg - aggs%b_agg))                                     &
+!          & / (1._wp + aggs%df_agg - aggs%b_agg))  ! (m/s)
+
 
   end function ws_Re
 
