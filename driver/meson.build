@@ -19,6 +19,9 @@ includes = []
 sources += files('M4AGO_driver.F90',
 		 '../src/mo_m4ago_core.f90',
 		 '../src/mo_m4ago_kind.F90',
+		 '../src/mo_m4ago_types.f90',
+		 '../src/mo_m4ago_params.f90',
+		 '../src/mo_m4ago_control.f90',
 		 '../src/mo_m4ago_physics.f90')
 
 subdir('tests')

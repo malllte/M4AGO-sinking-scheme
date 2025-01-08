@@ -69,39 +69,13 @@
 
 module mo_m4ago_core
 
-  use mo_m4ago_kind, only: wp
+  use mo_m4ago_kind,   only: wp
+  use mo_m4ago_types,  only: aggregates, agg_environment
+  use mo_m4ago_params, only: grav_acc_const,AJ1,AJ2,AJ3,BJ1,BJ2,BJ3,ONE_SIXTH,PI
 
   implicit none
 
   private
-
-
-  ! type aggregates holds required information on aggregates, their composition, their size distribution, etc.
-  type, public :: aggregates
-    integer  :: NPrimPartTypes                       ! Number of primary particle types
-    real(wp) :: av_dp                                ! mean primary particle diameter (m)
-    real(wp) :: av_rho_p                             ! mean primary particle density (kg/m3)
-    real(wp) :: df_agg                               ! aggregate fractal dimension - range: agg_df_min-agg_df_max (-)
-    real(wp) :: b_agg                                ! aggregate number distribution slope (-)
-    real(wp) :: dmax_agg                             ! maximum aggregate diameter (m)
-    real(wp) :: stickiness_agg                       ! aggregate stickiness - range : 0-1 (-)
-    real(wp) :: stickiness_frustule                  ! opal frustule stickiness
-    real(wp) :: Re_crit_agg                          ! critical diameter-based particle Reynolds number for fragmentation
-    real(wp) :: ws_aggregates                        ! mean aggregate sinking velocity (m/s)
-    real(wp) :: n_pptotal                            ! total number of primary particles (#/L^3)
-    real(wp),dimension(:), allocatable :: dp_pp         ! primary particle diameter of each primary particle type (L)
-    real(wp),dimension(:), allocatable :: rho_pp        ! primary particle density of each primary particle type (M/L^3)
-    real(wp),dimension(:), allocatable :: stickiness_pp ! stickiness of each primary particle type (-)
-    real(wp),dimension(:), allocatable :: n_pp          ! total number of each primary particle type (#/L^3)
-    real(wp),dimension(:), allocatable :: A_pp          ! surface area of each primary particle type (L^2/L^3)
-    real(wp),dimension(:), allocatable :: V_pp          ! total volume of each primary particle type (L^3/L^3)
-  end type aggregates
-
-  ! type agg_environment holds information on the local environment of the aggregtes
-  type, public ::agg_environment
-    real(wp) :: mu                            ! molecular dynamic viscosity
-    real(wp) :: rho_aq                        ! density of surrounding water
-  end type agg_environment
 
   ! Public subroutines & functions
   public :: init_m4ago_core_parameters        ! Initialization of module parameters
@@ -111,28 +85,11 @@ module mo_m4ago_core
   public :: volweighted_agg_porosity          ! Aggregate Volume-weighted mean aggregate porosity (diagnostic)
   public :: conc_weighted_mean_agg_diameter   ! mass concentration-weighted mean aggregate diameter (diagnostic)
 
-  ! Public values
-  public :: rho_aq,ONE_SIXTH,PI
-
   ! Core parameters for M4AGO
   real(wp), protected :: agg_Re_crit                       ! critical diameter-based particle Reynolds number for fragmentation
   real(wp), protected :: agg_df_min,agg_df_max             ! minimum and maximum fractal dim of aggregates
   real(wp), protected :: df_slope                          ! slope of df versus stickiness mapping
   real(wp), protected :: stickiness_min,stickiness_max     ! minimum and maximum stickiness of marine aggregates
-  real(wp), parameter :: rho_aq         = 1025._wp         ! default water reference density  (1025 kg/m^3)
-  real(wp), parameter :: grav_acc_const = 9.81_wp          ! gravitational acceleration constant
-
-  ! constants for the drag coefficient CD according to Ji & Logan 1991
-  real(wp), parameter :: AJ1 = 24.00_wp
-  real(wp), parameter :: AJ2 = 29.03_wp
-  real(wp), parameter :: AJ3 = 14.15_wp
-  real(wp), parameter :: BJ1 = 1.0_wp
-  real(wp), parameter :: BJ2 = 0.871_wp
-  real(wp), parameter :: BJ3 = 0.547_wp
-
-  ! Helping parameters
-  real(wp), parameter :: ONE_SIXTH = 1._wp/6._wp
-  real(wp), parameter :: PI        = 3.141592654_wp
 
 contains
 

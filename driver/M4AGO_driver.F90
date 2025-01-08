@@ -54,65 +54,23 @@
 program M4AGO_driver
 
 use mo_m4ago_kind,    only: wp
-use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,                        &
-                          & ws_Re_approx,volweighted_agg_density,                                  &
+use mo_m4ago_types,   only: aggregates,agg_environment
+use mo_m4ago_params,  only: rho_aq
+use mo_m4ago_core,    only: ws_Re_approx,volweighted_agg_density,                                  &
                           & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,              &
                           & aggregate_properties, init_m4ago_core_parameters
-
+use driver,           only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartTypes,stickiness_max,&
+                          & stickiness_min, init_m4ago_params,prepare_primary_particles,           &
+                          & print_information,init_m4ago_nml_params
 !use mo_m4ago_physics, only: mol_dyn_vis
 
   implicit none
 
-  ! ------------------------------------------------------------------------------------------------
-  ! biogeochemistry model-specific parameters
-  ! ------------------------------------------------------------------------------------------------
-  ! primary particle diameter for POM & PIM species involved in parametrized aggregation (m)
-  real(wp) :: dp_dust ! primary particle diameter dust
-  real(wp) :: dp_det  ! primary particle diameter detritus
-  real(wp) :: dp_calc ! primary particle diameter calc
-  real(wp) :: dp_opal ! primary particle diameter opal
-
-  ! Stickiness of primary particles
-  real(wp) :: stickiness_TEP  ! stickiness of TEP (related to opal frustules)
-  real(wp) :: stickiness_det  ! normal detritus stickiness
-  real(wp) :: stickiness_opal ! stickiness of opal (without TEP - just normal coating)
-  real(wp) :: stickiness_calc ! stickiness of calc particles (coated with organics)
-  real(wp) :: stickiness_dust ! stickiness of dust particles (coated with organics)
-
-  real(wp) :: agg_df_max      ! maximum fractal dimension of aggregates (~2.5)
-  real(wp) :: agg_df_min      ! minimum fractal dimension of aggregates (~1.2 - 1.6)
-  real(wp) :: rho_TEP         ! density of TEP particles
-  real(wp) :: agg_org_dens    ! organic detritus density (alternative to orgdens to avoid negative ws)
-  real(wp) :: agg_Re_crit     ! critical particle Reynolds number for fragmentation
-
-  ! calculated model-specific parameters
-  real(wp) :: det_mol2mass ! mol detritus P/m^3 to kg POM /m^3 (according to stoichiometry)
-  real(wp) :: V_dp_dust,V_dp_det,V_dp_calc,V_dp_opal   ! volumes of primary particles (L^3)
-  real(wp) :: A_dp_dust,A_dp_det,A_dp_calc,A_dp_opal   ! surface areas of primary particles (L^2)
-  real(wp) :: stickiness_min, stickiness_max           ! minimum and maximum stickiness of primary particles
-  real(wp) :: rho_V_dp_dust,rho_V_dp_det,rho_V_dp_calc ! rho_V_dp_opal ! mass of primary particles (M)
-  real(wp) :: Rm_SiP                                   ! molar mass ratio opal (SiO_2) to POM
-  real(wp) :: thick_shell                              ! diatom frustule shell thickness (L)
-  real(wp) :: d_frustule_inner                         ! diameter of hollow part in diatom frustule (L)
-  real(wp) :: V_frustule_inner                         ! volume of hollow part in diatom frustule (L^3)
-  real(wp) :: V_frustule_opal                          ! volume of opal shell material (L^3)
-  real(wp) :: rho_V_frustule_opal                      ! mass of frustule material (M)
-
   ! Parameter for M4AGO core
-  integer, parameter    :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
   type(agg_environment) :: agg_env
   type(aggregates)      :: aggs
 
-
-  real(wp) :: dynvis   = 0.001567_wp ! [kg/(m s)] dynamic molecular viscosity
-  real(wp) :: calcdens = 2600._wp
-  real(wp) :: claydens = 2600._wp
-  real(wp) :: NUM_FAC  = 1e9_wp
-  real(wp) :: opaldens = 2200._wp
-  real(wp) :: opalwei  = 60._wp
-  real(wp) :: calcwei  = 100._wp
-  real(wp) :: ropal    = 20._wp
-
+  ! For concentrations
   real(wp), allocatable :: C_det(:)
   real(wp), allocatable :: C_opal(:)
   real(wp), allocatable :: C_calc(:)
@@ -201,12 +159,80 @@ use mo_m4ago_core,    only: rho_aq,ONE_SIXTH,PI,aggregates,agg_environment,     
 
    end select
 
+end program M4AGO_driver
 
 
 
+! ==================================================================================================
+! ==================================================================================================
+! ==================================================================================================
+! ==================================================================================================
+
+module driver
+  use mo_m4ago_kind,    only: wp
+  use mo_m4ago_params,  only: rho_aq,ONE_SIXTH,PI
+  use mo_m4ago_kind,    only: wp
+  use mo_m4ago_types,   only: aggregates,agg_environment
+  use mo_m4ago_params,  only: rho_aq,ONE_SIXTH,PI
+  use mo_m4ago_core,    only: ws_Re_approx,volweighted_agg_density,                                &
+                            & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,            &
+                            & aggregate_properties, init_m4ago_core_parameters
+
+  implicit none
+
+  private
+
+  public :: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartTypes,stickiness_max,                &
+          & stickiness_min, init_m4ago_params,prepare_primary_particles,                           &
+          & print_information,init_m4ago_nml_params
+
+  ! ------------------------------------------------------------------------------------------------
+  ! biogeochemistry model-specific parameters
+  ! ------------------------------------------------------------------------------------------------
+  ! primary particle diameter for POM & PIM species involved in parametrized aggregation (m)
+  real(wp), protected :: dp_dust ! primary particle diameter dust
+  real(wp), protected :: dp_det  ! primary particle diameter detritus
+  real(wp), protected :: dp_calc ! primary particle diameter calc
+  real(wp), protected :: dp_opal ! primary particle diameter opal
+
+  ! Stickiness of primary particles
+  real(wp), protected :: stickiness_TEP  ! stickiness of TEP (related to opal frustules)
+  real(wp), protected :: stickiness_det  ! normal detritus stickiness
+  real(wp), protected :: stickiness_opal ! stickiness of opal (without TEP - just normal coating)
+  real(wp), protected :: stickiness_calc ! stickiness of calc particles (coated with organics)
+  real(wp), protected :: stickiness_dust ! stickiness of dust particles (coated with organics)
+
+  real(wp), protected :: agg_df_max      ! maximum fractal dimension of aggregates (~2.5)
+  real(wp), protected :: agg_df_min      ! minimum fractal dimension of aggregates (~1.2 - 1.6)
+  real(wp), protected :: rho_TEP         ! density of TEP particles
+  real(wp), protected :: agg_org_dens    ! organic detritus density (alternative to orgdens to avoid negative ws)
+  real(wp)            :: agg_Re_crit     ! critical particle Reynolds number for fragmentation
+
+  ! calculated model-specific parameters
+  real(wp), protected :: det_mol2mass ! mol detritus P/m^3 to kg POM /m^3 (according to stoichiometry)
+  real(wp), protected :: V_dp_dust,V_dp_det,V_dp_calc,V_dp_opal   ! volumes of primary particles (L^3)
+  real(wp), protected :: A_dp_dust,A_dp_det,A_dp_calc,A_dp_opal   ! surface areas of primary particles (L^2)
+  real(wp), protected :: stickiness_min, stickiness_max           ! minimum and maximum stickiness of primary particles
+  real(wp), protected :: rho_V_dp_dust,rho_V_dp_det,rho_V_dp_calc ! rho_V_dp_opal ! mass of primary particles (M)
+  real(wp), protected :: Rm_SiP                                   ! molar mass ratio opal (SiO_2) to POM
+  real(wp), protected :: thick_shell                              ! diatom frustule shell thickness (L)
+  real(wp), protected :: d_frustule_inner                         ! diameter of hollow part in diatom frustule (L)
+  real(wp), protected :: V_frustule_inner                         ! volume of hollow part in diatom frustule (L^3)
+  real(wp), protected :: V_frustule_opal                          ! volume of opal shell material (L^3)
+  real(wp), protected :: rho_V_frustule_opal                      ! mass of frustule material (M)
+
+  real(wp), protected :: dynvis   = 0.001567_wp ! [kg/(m s)] dynamic molecular viscosity
+  real(wp), protected :: calcdens = 2600._wp
+  real(wp), protected :: claydens = 2600._wp
+  real(wp), protected :: NUM_FAC  = 1e9_wp
+  real(wp), protected :: opaldens = 2200._wp
+  real(wp), protected :: opalwei  = 60._wp
+  real(wp), protected :: calcwei  = 100._wp
+  real(wp), protected :: ropal    = 20._wp
+
+  integer, parameter    :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
 
 contains
-
   subroutine print_information(aggs,agg_env)
 
     implicit none
@@ -445,4 +471,4 @@ contains
 
   end subroutine prepare_primary_particles
 
-end program M4AGO_driver
+end module driver
