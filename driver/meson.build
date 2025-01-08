@@ -17,6 +17,7 @@ includes = []
 
 # Add files to required sources to build the program
 sources += files('M4AGO_driver.F90',
+                 'mo_driver_routines.f90',
 		 '../src/mo_m4ago_core.f90',
 		 '../src/mo_m4ago_kind.F90',
 		 '../src/mo_m4ago_types.f90',
