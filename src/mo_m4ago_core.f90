@@ -233,7 +233,7 @@ contains
     type(aggregates),intent(inout)   :: aggs
     type(agg_environment),intent(in) :: agg_env
 
-    if (aggs%av_dp > 0._wp) then
+    if (aggs%n_pptotal > 0._wp) then
       aggs%ws_aggregates = ws_Re(aggs,agg_env)
     else
       aggs%ws_aggregates = 0._wp
@@ -472,41 +472,6 @@ contains
     mass_factor = ONE_SIXTH * PI * dp**(3._wp - df) * rhop
 
   end function mass_factor
-
-
-  !=================================================================================================
-  real(wp) function rho_agg(d,rhop,dp,df,rho)
-    !-----------------------------------------------------------------------
-    !>
-    !! rho_agg provides the aggregate density
-    !!
-
-    implicit none
-
-    real(wp), intent(in) :: d
-    real(wp), intent(in) :: rhop
-    real(wp), intent(in) :: dp
-    real(wp), intent(in) :: df
-    real(wp), intent(in) :: rho
-
-    rho_agg =  (rhop - rho)*(dp/d)**(3._wp - df) + rho
-
-  end function rho_agg
-
-  !=================================================================================================
-  real(wp) function Re_fun(ws,d,mu,rho)
-    !-----------------------------------------------------------------------
-    !>
-    !! Particle Reynolds number for settling particles (based on diameter)
-    !!
-
-    implicit none
-
-    real(wp),intent(in) :: ws,d,mu,rho
-
-    Re_fun = abs(ws*d*rho/mu)
-
-  end function Re_fun
 
 end module mo_m4ago_core
 
