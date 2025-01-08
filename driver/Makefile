@@ -1,5 +1,8 @@
 default: run
 
+reconfigure:
+	meson --reconfigure ../build
+
 setup:
 	meson setup ../build
 
