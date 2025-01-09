@@ -56,7 +56,7 @@ module mo_driver_routines
   use mo_m4ago_kind,    only: wp
   use mo_m4ago_types,   only: aggregates,agg_environment
   use mo_m4ago_params,  only: rho_aq,ONE_SIXTH,PI
-  use mo_m4ago_core,    only: ws_Re_approx,volweighted_agg_density,                                &
+  use mo_m4ago_core,    only: volweighted_agg_density,                                             &
                             & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,            &
                             & aggregate_properties, init_m4ago_core_parameters
 

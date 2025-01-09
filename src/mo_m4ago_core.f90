@@ -80,8 +80,7 @@ module mo_m4ago_core
   ! Public subroutines & functions
   public :: init_m4ago_core_parameters        ! Initialization of module parameters
   public :: aggregate_properties              ! calculation of aggregate properties from primary particles information
-  public :: mean_aggregate_sinking_speed
-  public :: ws_Re_approx                      ! mass concentration-weighted mean sinking velocity
+  public :: mean_aggregate_sinking_speed      ! mass concentration-weighted mean sinking velocity
   public :: volweighted_agg_density           ! Aggregate volume-weighted mean aggregate density (diagnostic)
   public :: volweighted_agg_porosity          ! Aggregate Volume-weighted mean aggregate porosity (diagnostic)
   public :: conc_weighted_mean_agg_diameter   ! mass concentration-weighted mean aggregate diameter (diagnostic)
