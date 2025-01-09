@@ -59,10 +59,9 @@ use mo_m4ago_params,  only: rho_aq
 use mo_m4ago_core,    only: mean_aggregate_sinking_speed,volweighted_agg_density,                  &
                           & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,              &
                           & aggregate_properties, init_m4ago_core_parameters
-use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartTypes,stickiness_max,&
-                          & stickiness_min, init_m4ago_params,prepare_primary_particles,           &
-                          & print_information,init_m4ago_nml_params
-!use mo_m4ago_physics, only: mol_dyn_vis
+use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartTypes,              &
+                          & stickiness_min,stickiness_max,init_m4ago_params,                       &
+                          & prepare_primary_particles,print_information,init_m4ago_nml_params
 
   implicit none
 
@@ -70,7 +69,7 @@ use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartT
   type(agg_environment) :: agg_env
   type(aggregates)      :: aggs
 
-  ! For concentrations
+  ! For concentrations (kmol/m^3 or dust: kg/m^3)
   real(wp), allocatable :: C_det(:)
   real(wp), allocatable :: C_opal(:)
   real(wp), allocatable :: C_calc(:)

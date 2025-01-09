@@ -72,8 +72,8 @@ module mo_m4ago_params
 
   public
 
-  real(wp), parameter :: grav_acc_const = 9.81_wp   ! gravitational acceleration constant [m/s^2]
-  real(wp), parameter :: rho_aq         = 1025._wp  ! default water reference density  (1025 kg/m^3)
+  real(wp), parameter :: grav_acc_const = 9.81_wp   ! (m/s^2) Gravitational acceleration constant
+  real(wp), parameter :: rho_aq         = 1025._wp  ! (kg/m^3) default water reference density:  1025 kg/m^3
 
   ! constants for the drag coefficient CD according to Ji & Logan 1991
   real(wp), parameter :: AJ1 = 24.00_wp

@@ -103,14 +103,14 @@ module mo_driver_routines
   real(wp), protected :: V_frustule_opal                          ! volume of opal shell material (L^3)
   real(wp), protected :: rho_V_frustule_opal                      ! mass of frustule material (M)
 
-  real(wp), protected :: dynvis   = 0.001567_wp ! [kg/(m s)] dynamic molecular viscosity
-  real(wp), protected :: calcdens = 2600._wp
-  real(wp), protected :: claydens = 2600._wp
-  real(wp), protected :: NUM_FAC  = 1e9_wp
-  real(wp), protected :: opaldens = 2200._wp
-  real(wp), protected :: opalwei  = 60._wp
-  real(wp), protected :: calcwei  = 100._wp
-  real(wp), protected :: ropal    = 20._wp
+  real(wp), protected :: dynvis   = 0.001567_wp ! (kg/(m s)) dynamic molecular viscosity
+  real(wp), protected :: calcdens = 2600._wp    ! (kg/m^3)   CaCO3 density
+  real(wp), protected :: claydens = 2600._wp    ! (kg/m^3)   dust/clay density
+  real(wp), protected :: NUM_FAC  = 1e9_wp      ! (-)        Numerical factor to avoid numerical issues
+  real(wp), protected :: opaldens = 2200._wp    ! (kg/m^3)   Opal density
+  real(wp), protected :: opalwei  = 60._wp      ! (kg/kmol)  Opal mol-weight
+  real(wp), protected :: calcwei  = 100._wp     ! (kg/kmol)  CaCO3 mol-weight
+  real(wp), protected :: ropal    = 20._wp      ! (mol Si/mol P) Silicate to phosphorus uptake production ratio
 
   integer, parameter    :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
 

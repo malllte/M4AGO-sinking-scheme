@@ -74,31 +74,34 @@ module mo_m4ago_types
 
   private
 
-  ! type aggregates holds required information on aggregates, their composition, their size distribution, etc.
+  ! Type aggregates holds required information on aggregates, their composition, their size distribution, etc.
+  ! NOTE: due to an applied numerical factor (NUM_FAC), some of the values are scaled via this NUM_FAC,
+  !       if the hosting BGC model applies the NUM_FAC (see wrapper functions for example)
+  !       NUM_FAC is used to avoid numerical precision issues
   type, public :: aggregates
-    integer  :: NPrimPartTypes                       ! Number of primary particle types
-    real(wp) :: av_dp                                ! mean primary particle diameter (m)
-    real(wp) :: av_rho_p                             ! mean primary particle density (kg/m3)
-    real(wp) :: df_agg                               ! aggregate fractal dimension - range: agg_df_min-agg_df_max (-)
-    real(wp) :: b_agg                                ! aggregate number distribution slope (-)
-    real(wp) :: dmax_agg                             ! maximum aggregate diameter (m)
-    real(wp) :: stickiness_agg                       ! aggregate stickiness - range : 0-1 (-)
-    real(wp) :: stickiness_frustule                  ! opal frustule stickiness
-    real(wp) :: Re_crit_agg                          ! critical diameter-based particle Reynolds number for fragmentation
-    real(wp) :: ws_aggregates                        ! mean aggregate sinking velocity (m/s)
-    real(wp) :: n_pptotal                            ! total number of primary particles (#/L^3)
-    real(wp),dimension(:), allocatable :: dp_pp         ! primary particle diameter of each primary particle type (L)
-    real(wp),dimension(:), allocatable :: rho_pp        ! primary particle density of each primary particle type (M/L^3)
-    real(wp),dimension(:), allocatable :: stickiness_pp ! stickiness of each primary particle type (-)
-    real(wp),dimension(:), allocatable :: n_pp          ! total number of each primary particle type (#/L^3)
-    real(wp),dimension(:), allocatable :: A_pp          ! surface area of each primary particle type (L^2/L^3)
-    real(wp),dimension(:), allocatable :: V_pp          ! total volume of each primary particle type (L^3/L^3)
+    integer  :: NPrimPartTypes                       ! (#)      Number of primary particle types
+    real(wp) :: av_dp                                ! (m)      Mean primary particle diameter
+    real(wp) :: av_rho_p                             ! (kg/m^3) Mean primary particle density
+    real(wp) :: df_agg                               ! (-)      Aggregate fractal dimension - range: agg_df_min-agg_df_max
+    real(wp) :: b_agg                                ! (-)      Aggregate number distribution slope
+    real(wp) :: dmax_agg                             ! (m)      Maximum aggregate diameter
+    real(wp) :: stickiness_agg                       ! (-)      Aggregate stickiness - range : 0-1
+    real(wp) :: stickiness_frustule                  ! (-)      Opal frustule stickiness
+    real(wp) :: Re_crit_agg                          ! (-)      Critical diameter-based particle Reynolds number for fragmentation
+    real(wp) :: ws_aggregates                        ! (m/s)    Mean aggregate sinking velocity
+    real(wp) :: n_pptotal                            ! (#/m^3)/NUM_FAC      Total number of primary particles
+    real(wp),dimension(:), allocatable :: dp_pp         ! (m)               Primary particle diameter of each primary particle type
+    real(wp),dimension(:), allocatable :: rho_pp        ! (kg/m^3)          Primary particle density of each primary particle type
+    real(wp),dimension(:), allocatable :: stickiness_pp ! (-)               Stickiness of each primary particle type
+    real(wp),dimension(:), allocatable :: n_pp          ! (#/m^3)/NUM_FAC   Total number of each primary particle type
+    real(wp),dimension(:), allocatable :: A_pp          ! (m^2/m^3)         Surface area of each primary particle type
+    real(wp),dimension(:), allocatable :: V_pp          ! (m^3/m^3)*NUM_FAC Total volume of each primary particle type
   end type aggregates
 
-  ! type agg_environment holds information on the local environment of the aggregtes
+  ! Type agg_environment holds information on the local environment of the aggregtes
   type, public ::agg_environment
-    real(wp) :: mu                            ! molecular dynamic viscosity
-    real(wp) :: rho_aq                        ! density of surrounding water
+    real(wp) :: mu                            ! (kg/m*s) Molecular dynamic viscosity
+    real(wp) :: rho_aq                        ! (kg/m^3) Density of ambient water
   end type agg_environment
 
 end module mo_m4ago_types

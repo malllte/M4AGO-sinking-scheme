@@ -79,24 +79,31 @@ module mo_m4ago_core
 
   ! Public subroutines & functions
   public :: init_m4ago_core_parameters        ! Initialization of module parameters
-  public :: aggregate_properties              ! calculation of aggregate properties from primary particles information
-  public :: mean_aggregate_sinking_speed      ! mass concentration-weighted mean sinking velocity
-  public :: volweighted_agg_density           ! Aggregate volume-weighted mean aggregate density (diagnostic)
-  public :: volweighted_agg_porosity          ! Aggregate Volume-weighted mean aggregate porosity (diagnostic)
-  public :: conc_weighted_mean_agg_diameter   ! mass concentration-weighted mean aggregate diameter (diagnostic)
+  public :: aggregate_properties              ! Calculation of aggregate properties from primary particles information
+  public :: mean_aggregate_sinking_speed      ! (m/s)   Mass concentration-weighted mean sinking velocity
+  public :: volweighted_agg_density           ! (kg/m3) Aggregate volume-weighted mean aggregate density (diagnostic)
+  public :: volweighted_agg_porosity          ! (-)     Aggregate Volume-weighted mean aggregate porosity (diagnostic)
+  public :: conc_weighted_mean_agg_diameter   ! (m)     Mass concentration-weighted mean aggregate diameter (diagnostic)
 
   ! Core parameters for M4AGO
-  real(wp), protected :: agg_Re_crit                       ! critical diameter-based particle Reynolds number for fragmentation
-  real(wp), protected :: agg_df_min,agg_df_max             ! minimum and maximum fractal dim of aggregates
-  real(wp), protected :: df_slope                          ! slope of df versus stickiness mapping
-  real(wp), protected :: stickiness_min,stickiness_max     ! minimum and maximum stickiness of marine aggregates
+  real(wp), protected :: agg_Re_crit                       ! (-) Critical diameter-based particle Reynolds number for fragmentation
+  real(wp), protected :: agg_df_min,agg_df_max             ! (-) Minimum and maximum fractal dim of aggregates
+  real(wp), protected :: df_slope                          ! (-) Slope of df versus stickiness mapping
+  real(wp), protected :: stickiness_min,stickiness_max     ! (-) Minimum and maximum stickiness of marine aggregates
 
 contains
 
   !=================================================================================================
   subroutine init_m4ago_core_parameters(Re_crit,df_min,df_max, stick_min, stick_max)
+    !-----------------------------------------------------------------------
     !>
-    !! Initializing fixed core parameters that don't change over run time of the model
+    !! Initializing fixed core parameters that do not change over run time of the model
+    !!
+    !!  - Re_crit:   (-) Critical diameter-based particle Reynolds number for fragmentation
+    !!  - df_min:    (-) Minimum fractal dimension of aggregates
+    !!  - df_max:    (-) Maximum fractal dimension of aggregates
+    !!  - stick_min: (-) Minimum stickiness of aggregates/primary particles
+    !!  - stcik_max: (-) Maximum stickiness of aggregates/primary particles
     !!
 
     implicit none
@@ -118,15 +125,17 @@ contains
 
   !=================================================================================================
   subroutine aggregate_properties(aggs, agg_env)
+    !-----------------------------------------------------------------------
     !>
     !! Calculate aggregate properties from individual primary particle information
     !!
-    !!  - stickiness_agg: aggregate stickiness - range : 0-1 (-)
-    !!  - df_agg:         aggregate fractal dimension - range: agg_df_min-agg_df_max (-)
-    !!  - b_agg:          aggregate number distribution slope (-)
-    !!  - av_dp:          mean primary particle diameter (m)
-    !!  - av_rho_p:       mean primary particle density (kg/m3)
-    !!  - dmax_agg:       maximum aggregate diameter (m)
+    !!  - stickiness_agg: (-)     Aggregate stickiness - range : 0-1
+    !!  - df_agg:         (-)     Aggregate fractal dimension - range: agg_df_min-agg_df_max
+    !!  - b_agg:          (-)     Aggregate number distribution slope
+    !!  - av_dp:          (m)     Mean primary particle diameter
+    !!  - av_rho_p:       (kg/m3) Mean primary particle density
+    !!  - dmax_agg:       (m)     Maximum aggregate diameter
+    !!
 
     implicit none
     type(aggregates),intent(inout)   :: aggs
@@ -153,12 +162,12 @@ contains
 
     ! ------ calc mean aggregate stickiness
     do ipp = 1,aggs%NPrimPartTypes
-       aggs%n_pptotal    = aggs%n_pptotal + aggs%n_pp(ipp)
-       A_total = A_total + aggs%A_pp(ipp)
+       aggs%n_pptotal      = aggs%n_pptotal + aggs%n_pp(ipp) ! potentially scaled by /NUM_FAC
+       A_total             = A_total + aggs%A_pp(ipp)
        aggs%stickiness_agg = aggs%stickiness_agg + aggs%A_pp(ipp)*aggs%stickiness_pp(ipp)
     enddo
 
-    ! Only if particles exist, perform the calculation
+    ! Only if primary particles exist, perform the calculation
     if (aggs%n_pptotal > 0._wp) then
       aggs%stickiness_agg = aggs%stickiness_agg/A_total
 
@@ -199,7 +208,7 @@ contains
       ! ----- calc primary particle mean diameter and mean density
       ! primary particle mean diameter according to Bushell & Amal 1998, 2000
       ! sum(n_i) not changing
-      ! previously introduced numerical factor (NUMFAC) can be pulled out and thus cancels out
+      ! previously introduced numerical factor (NUM_FAC) can be pulled out and thus cancels out
       do ipp = 1,aggs%NPrimPartTypes
         aggs%av_dp   = aggs%av_dp   + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**3
         Vdpfrac = Vdpfrac + aggs%n_pp(ipp)*aggs%dp_pp(ipp)**aggs%df_agg
@@ -220,9 +229,9 @@ contains
 
   !=================================================================================================
   subroutine mean_aggregate_sinking_speed(aggs,agg_env)
-    !
+    !-----------------------------------------------------------------------
     !>
-    !! mean_aggregate_sinking_speed: routine that provides the sinking velocity
+    !! Mean_aggregate_sinking_speed: wrapping routine that provides the sinking velocity
     !! of aggregates to the calling BGC model
     !!
 
@@ -238,7 +247,7 @@ contains
   subroutine ws_Re_approx(aggs,agg_env)
     !-----------------------------------------------------------------------
     !>
-    !! ws_Re_approx:  distribution integrated to Lmax (Re crit dependent maximum agg size)
+    !! ws_Re_approx:  distribution integrated to dmax (Re crit dependent maximum agg size)
     !! Renolds number-dependent sinking velocity.
     !! Approximation for c_D-value taken from Jiang & Logan 1991:
     !! c_D=a*Re^-b
@@ -268,9 +277,9 @@ contains
     ! Arguments
     type(aggregates),intent(in)      :: aggs
     type(agg_environment),intent(in) :: agg_env
-    real(wp), intent(in) :: AJ
-    real(wp), intent(in) :: BJ
-    real(wp), intent(in) :: Re
+    real(wp), intent(in) :: AJ                  ! Jiang pre-factor for drag coefficient approximation
+    real(wp), intent(in) :: BJ                  ! Jiang power for drag coefficient approximation
+    real(wp), intent(in) :: Re                  ! (-) Diameter-based particle Reynolds number
 
     ! Local variables
 
@@ -288,8 +297,9 @@ contains
   real(wp) function get_ws_agg_integral(aggs,AJ, BJ, lower_bound, upper_bound,agg_env)
     !------------------------------------------------------------------------
     !>
-    !! Calculate piecewise defined integral
+    !! Calculate piecewise defined integral for sinking velocity
     !!
+
     implicit none
 
     type(aggregates),intent(in) :: aggs
@@ -319,7 +329,7 @@ contains
   real(wp) function ws_Re(aggs,agg_env)
     !-----------------------------------------------------------------------
     !>
-    !! ws_Re:  distribution integrated to Lmax (Re crit dependent maximum agg size)
+    !! ws_Re:  distribution integrated to dmax (Re crit-dependent maximum agg size)
     !! Reynolds number-dependent sinking velocity.
     !! Approximation for c_D-value taken from Jiang & Logan 1991:
     !! c_D=a*Re^-b
@@ -333,7 +343,7 @@ contains
     type(aggregates),intent(inout)   :: aggs
     type(agg_environment),intent(in) :: agg_env
 
-    ! Local
+    ! Local variables
     real(wp) :: d_Re01, d_Re10,wsints
 
     ! for Re-dependent, it should always be Re_crit_agg>10 (assumption in dmax calculation)
@@ -346,7 +356,7 @@ contains
 
     wsints = 0._wp
 
-    ! assuming dmax_agg > av_dp and sum up the numerator integrals in Eq. 20
+    ! assuming dmax_agg > av_dp and sum up the numerator integrals in Eq. (20) of Maerz et al. 2020
     wsints = get_ws_agg_integral(aggs,AJ1, BJ1, aggs%av_dp, min(aggs%dmax_agg,d_Re01),agg_env)
     if (aggs%dmax_agg > d_Re01) then
       wsints = wsints +get_ws_agg_integral(aggs,AJ2, BJ2, d_Re01, min(aggs%dmax_agg,d_Re10),agg_env)
@@ -408,6 +418,11 @@ contains
   ! DIAGNOSTICS
 
   real(wp) function volweighted_agg_density(aggs,agg_env)
+    !-------------------------------------------------------------------------
+    !>
+    !! volweighted_agg_density provides the aggregate volume-weighted mean aggregate density
+    !! across the size spectrum (kg/m3)
+    !!
 
     type(aggregates),intent(in)      :: aggs
     type(agg_environment),intent(in) :: agg_env
@@ -428,6 +443,11 @@ contains
 
   !=================================================================================================
   real(wp) function volweighted_agg_porosity(aggs)
+    !-------------------------------------------------------------------------
+    !>
+    !! volweighted_agg_porosity provides the volume-weighted mean aggregate porosity
+    !! across the size spectrum (-)
+    !!
 
     type(aggregates),intent(in) :: aggs
 
@@ -447,6 +467,11 @@ contains
 
   !=================================================================================================
   real(wp) function conc_weighted_mean_agg_diameter(aggs)
+    !-------------------------------------------------------------------------
+    !>
+    !! conc_weighted_mean_agg_diameter provides the mass concentration-weighted mean aggregate
+    !! diameter of the size spectrum (m)
+    !!
 
     type(aggregates),intent(in) :: aggs
 
@@ -478,6 +503,7 @@ contains
     !! mass_factor calculates the mass factor for the mass of a single
     !! aggregate
     !!
+
     implicit none
 
     real(wp), intent(in) :: dp
