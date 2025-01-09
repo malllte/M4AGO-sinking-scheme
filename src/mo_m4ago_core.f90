@@ -80,6 +80,7 @@ module mo_m4ago_core
   ! Public subroutines & functions
   public :: init_m4ago_core_parameters        ! Initialization of module parameters
   public :: aggregate_properties              ! calculation of aggregate properties from primary particles information
+  public :: mean_aggregate_sinking_speed
   public :: ws_Re_approx                      ! mass concentration-weighted mean sinking velocity
   public :: volweighted_agg_density           ! Aggregate volume-weighted mean aggregate density (diagnostic)
   public :: volweighted_agg_porosity          ! Aggregate Volume-weighted mean aggregate porosity (diagnostic)
@@ -217,6 +218,22 @@ contains
       call max_agg_diam(aggs,agg_env)
     endif
   end subroutine aggregate_properties
+
+  !=================================================================================================
+  subroutine mean_aggregate_sinking_speed(aggs,agg_env)
+    !
+    !>
+    !! mean_aggregate_sinking_speed: routine that provides the sinking velocity
+    !! of aggregates to the calling BGC model
+    !!
+
+    implicit none
+
+    type(aggregates),intent(inout)   :: aggs
+    type(agg_environment),intent(in) :: agg_env
+
+    call ws_Re_approx(aggs,agg_env)
+  end subroutine
 
   !=================================================================================================
   subroutine ws_Re_approx(aggs,agg_env)

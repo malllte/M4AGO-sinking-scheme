@@ -56,7 +56,7 @@ program M4AGO_driver
 use mo_m4ago_kind,    only: wp
 use mo_m4ago_types,   only: aggregates,agg_environment
 use mo_m4ago_params,  only: rho_aq
-use mo_m4ago_core,    only: ws_Re_approx,volweighted_agg_density,                                  &
+use mo_m4ago_core,    only: mean_aggregate_sinking_speed,volweighted_agg_density,                  &
                           & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,              &
                           & aggregate_properties, init_m4ago_core_parameters
 use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartTypes,stickiness_max,&
@@ -115,7 +115,7 @@ use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartT
       ! ------ calculate aggregate properties from individual primary particle information
       call aggregate_properties(aggs, agg_env)
       ! ======== calculate the mean sinking velocity of aggregates =======
-      call ws_Re_approx(aggs, agg_env)
+      call mean_aggregate_sinking_speed(aggs, agg_env)
 
       call print_information(aggs,agg_env)
 
@@ -147,7 +147,7 @@ use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartT
         ! ------ calculate aggregate properties from individual primary particle information
         call aggregate_properties(aggs, agg_env)
         ! ======== calculate the mean sinking velocity of aggregates =======
-        call ws_Re_approx(aggs, agg_env)
+        call mean_aggregate_sinking_speed(aggs, agg_env)
 
         print*,aggs%Re_crit_agg,aggs%dmax_agg*100._wp,aggs%ws_aggregates*86400._wp
       end do

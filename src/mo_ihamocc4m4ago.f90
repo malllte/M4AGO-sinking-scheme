@@ -80,7 +80,7 @@ module mo_ihamocc4m4ago
   use mo_m4ago_kind,    only: wp
   use mo_m4ago_types,   only: aggregates,agg_environment
   use mo_m4ago_params,  only: rho_aq,ONE_SIXTH,PI
-  use mo_m4ago_core,    only: ws_Re_approx,volweighted_agg_density,                                &
+  use mo_m4ago_core,    only: mean_aggregate_sinking_speed,volweighted_agg_density,                &
                             & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,            &
                             & aggregate_properties, init_m4ago_core_parameters
 
@@ -301,7 +301,7 @@ contains
             call aggregate_properties(aggs, agg_env)
 
             ! ======== calculate the mean sinking velocity of aggregates =======
-            call ws_Re_approx(aggs, agg_env)
+            call mean_aggregate_sinking_speed(aggs, agg_env)
 
             ! Limit settling velocity wrt CFL:
             ws_agg(i,j,k) = min(aggs%ws_aggregates*dtbgc, 0.99_wp*pddpo(i,j,k)) ! (m/s -> m/d)*dtb
