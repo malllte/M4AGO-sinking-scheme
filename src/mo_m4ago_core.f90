@@ -233,7 +233,7 @@ contains
     type(agg_environment),intent(in) :: agg_env
 
     call ws_Re_approx(aggs,agg_env)
-  end subroutine
+  end subroutine mean_aggregate_sinking_speed
 
   !=================================================================================================
   subroutine ws_Re_approx(aggs,agg_env)
