@@ -5,6 +5,7 @@ reconfigure:
 
 setup:
 	meson setup ../build
+	cp nml ../build/tests/nml
 
 compile: setup
 	meson compile -C ../build

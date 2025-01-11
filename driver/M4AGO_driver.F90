@@ -59,11 +59,20 @@ use mo_m4ago_params,  only: rho_aq
 use mo_m4ago_core,    only: mean_aggregate_sinking_speed,volweighted_agg_density,                  &
                           & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,              &
                           & aggregate_properties, init_m4ago_core_parameters
-use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartTypes,              &
-                          & stickiness_min,stickiness_max,init_m4ago_params,                       &
-                          & prepare_primary_particles,print_information,init_m4ago_nml_params
+use mo_driver_routines,      only: print_information
+use mo_m4ago_HAMOCCinit,     only: agg_df_max,agg_df_min,agg_Re_crit,NPrimPartTypes,               &
+                                 & stickiness_min,stickiness_max,init_m4ago_params
+use mo_m4ago_HAMOCCPrimPart, only: prepare_primary_particles
 
   implicit none
+
+  real(wp) :: calcdens = 2600._wp    ! (kg/m^3)   CaCO3 density
+  real(wp) :: claydens = 2600._wp    ! (kg/m^3)   dust/clay density
+  real(wp) :: opaldens = 2200._wp    ! (kg/m^3)   Opal density
+  real(wp) :: opalwei  = 60._wp      ! (kg/kmol)  Opal mol-weight
+  real(wp) :: calcwei  = 100._wp     ! (kg/kmol)  CaCO3 mol-weight
+  real(wp) :: ropal    = 20._wp      ! (mol Si/mol P) Silicate to phosphorus uptake production ratio
+  real(wp),parameter :: dynvis = 0.001567_wp ! (kg/(m*s) molecular dynamic viscoisty
 
   ! Parameter for M4AGO core
   type(agg_environment) :: agg_env
@@ -80,11 +89,9 @@ use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartT
   !    - single   : just test single concentration values
   !    - Recrit   : test single concentration values with varying Recrit values
   character(100) :: testcase = 'single'
-
   integer i
 
-  call init_m4ago_nml_params
-  call init_m4ago_params
+  call init_m4ago_params(claydens,calcdens,calcwei,opaldens,opalwei,ropal,'nml')
   allocate(aggs%dp_pp(NPrimPartTypes))
   allocate(aggs%rho_pp(NPrimPartTypes))
   allocate(aggs%stickiness_pp(NPrimPartTypes))
@@ -105,6 +112,7 @@ use mo_driver_routines,only: agg_df_max,agg_df_min,agg_Re_crit,dynvis,NPrimPartT
       C_opal  = 1e-8_wp
       C_calc  = 0._wp !1e-12_wp
       C_dust  = 0._wp !1e-11_wp
+
       ! Provide aggregates environment
       agg_env%rho_aq = rho_aq
       agg_env%mu     = dynvis
