@@ -36,13 +36,15 @@
 !!
 !! -----------------------------------------------------------------------------
 !! -----------------------------------------------------------------------------
-!! @file M4AGO_driver.F90
+!! @file mo_m4ago_HAMOCCinit.F90
+!!
 !! @brief Module for Marine Aggregates:
 !!        The Microstructure, Multiscale, Mechanistic, Marine Aggregates
 !!        in the Global Ocean (M4AGO) sinking scheme
 !!
-!! The M4AGO_driver module provides some test routines to improve and check
-!! the M4AGO code for robustness
+!! The mo_m4ago_HAMOCCinit module provides initialization routines for M4AGO
+!!        parameters that are OBGC-dependent (here HAMOCC-type models)
+!!
 !!
 !! 2024 packaged as individual module (initially for iHAMOCC) by joeran maerz, UiB, Bergen
 !!
