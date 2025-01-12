@@ -42,7 +42,6 @@
 !!        in the Global Ocean (M4AGO) sinking scheme
 !!
 !! The mo_ihamocc4m4ago module contains routines to calculate:
-!!      - primary particles from iHAMOCC tracers
 !!      - diagnostics and enables to return a 3D sinking velocity field
 !!
 !! See:
@@ -72,14 +71,13 @@ module mo_ihamocc4m4ago
   ! iHAMOCC ocean biogeochemistry model-specific routines
   use mo_vgrid,         only: dp_min
   use mo_control_bgc,   only: dtb, dtbgc,io_stdo_bgc
-  use mo_param_bgc,     only: calcdens, claydens, opaldens, calcwei, opalwei, ropal
   use mo_carbch,        only: ocetra
   use mo_param1_bgc,    only: iopal, ifdust, icalc, idet
 
   ! M4AGO routines:
   use mo_m4ago_kind,    only: wp
   use mo_m4ago_types,   only: aggregates,agg_environment
-  use mo_m4ago_params,  only: rho_aq,ONE_SIXTH,PI
+  use mo_m4ago_params,  only: rho_aq
   use mo_m4ago_core,    only: mean_aggregate_sinking_speed,volweighted_agg_density,                &
                             & volweighted_agg_porosity,conc_weighted_mean_agg_diameter,            &
                             & aggregate_properties, init_m4ago_core_parameters
@@ -335,6 +333,5 @@ contains
     enddo
     !$OMP END PARALLEL DO
   end subroutine dynvis
-
 
 end module mo_ihamocc4m4ago
