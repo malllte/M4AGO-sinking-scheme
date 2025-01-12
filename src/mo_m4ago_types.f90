@@ -89,16 +89,16 @@ module mo_m4ago_types
     real(wp) :: stickiness_frustule                  ! (-)      Opal frustule stickiness
     real(wp) :: Re_crit_agg                          ! (-)      Critical diameter-based particle Reynolds number for fragmentation
     real(wp) :: ws_aggregates                        ! (m/s)    Mean aggregate sinking velocity
-    real(wp) :: n_pptotal                            ! (#/m^3)/NUM_FAC      Total number of primary particles
+    real(wp) :: n_pptotal                            ! (#/m^3)/NUM_FAC      Total number of primary particles per unit volume
     real(wp),dimension(:), allocatable :: dp_pp         ! (m)               Primary particle diameter of each primary particle type
     real(wp),dimension(:), allocatable :: rho_pp        ! (kg/m^3)          Primary particle density of each primary particle type
     real(wp),dimension(:), allocatable :: stickiness_pp ! (-)               Stickiness of each primary particle type
-    real(wp),dimension(:), allocatable :: n_pp          ! (#/m^3)/NUM_FAC   Total number of each primary particle type
-    real(wp),dimension(:), allocatable :: A_pp          ! (m^2/m^3)         Surface area of each primary particle type
-    real(wp),dimension(:), allocatable :: V_pp          ! (m^3/m^3)*NUM_FAC Total volume of each primary particle type
+    real(wp),dimension(:), allocatable :: n_pp          ! (#/m^3)/NUM_FAC   Total number of each primary particle type per unit volume
+    real(wp),dimension(:), allocatable :: A_pp          ! (m^2/m^3)         Total surface area of each primary particle type per unit volume
+    real(wp),dimension(:), allocatable :: V_pp          ! (m^3/m^3)*NUM_FAC Total volume of each primary particle type per unit volume
   end type aggregates
 
-  ! Type agg_environment holds information on the local environment of the aggregtes
+  ! Type agg_environment holds information on the local environment of the aggregates
   type, public ::agg_environment
     real(wp) :: mu                            ! (kg/m*s) Molecular dynamic viscosity
     real(wp) :: rho_aq                        ! (kg/m^3) Density of ambient water

@@ -61,7 +61,8 @@ use mo_m4ago_core,    only: mean_aggregate_sinking_speed,volweighted_agg_density
                           & aggregate_properties, init_m4ago_core_parameters
 use mo_driver_routines,      only: print_information
 use mo_m4ago_HAMOCCinit,     only: agg_df_max,agg_df_min,agg_Re_crit,NPrimPartTypes,               &
-                                 & stickiness_min,stickiness_max,init_m4ago_params
+                                 & stickiness_min,stickiness_max,init_m4ago_nml_params,            &
+                                 & init_m4ago_derived_params
 use mo_m4ago_HAMOCCPrimPart, only: prepare_primary_particles
 
   implicit none
@@ -91,7 +92,9 @@ use mo_m4ago_HAMOCCPrimPart, only: prepare_primary_particles
   character(100) :: testcase = 'single'
   integer i
 
-  call init_m4ago_params(claydens,calcdens,calcwei,opaldens,opalwei,ropal,'nml')
+  call init_m4ago_nml_params(claydens,calcdens,calcwei,opaldens,opalwei,'nml')
+  call init_m4ago_derived_params(ropal)
+
   allocate(aggs%dp_pp(NPrimPartTypes))
   allocate(aggs%rho_pp(NPrimPartTypes))
   allocate(aggs%stickiness_pp(NPrimPartTypes))

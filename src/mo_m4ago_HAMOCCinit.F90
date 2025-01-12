@@ -60,7 +60,7 @@ module mo_m4ago_HAMOCCinit
 
   private
 
-  public :: init_m4ago_params
+  public :: init_m4ago_nml_params, init_m4ago_derived_params !,reset_m4ago_nml_params
   public :: agg_df_max,agg_df_min,agg_Re_crit,NPrimPartTypes,NUM_FAC,                              &
           & stickiness_min,stickiness_max,                                                         &
           & stickiness_TEP, stickiness_det, stickiness_opal, stickiness_calc, stickiness_dust,     &
@@ -88,8 +88,8 @@ module mo_m4ago_HAMOCCinit
   real(wp), protected :: stickiness_dust ! (-) Stickiness of dust particles (coated with organics)
 
   ! Minimum and maximum fractal dimension
-  real(wp), protected :: agg_df_max      ! (-)       Maximum fractal dimension of aggregates (~2.5)
-  real(wp), protected :: agg_df_min      ! (-)       Minimum fractal dimension of aggregates (~1.2 - 1.6)
+  real(wp), protected :: agg_df_max      ! (-) Maximum fractal dimension of aggregates (~2.5)
+  real(wp), protected :: agg_df_min      ! (-) Minimum fractal dimension of aggregates (~1.2 - 1.6)
 
   ! Base densities and mol-weights for primary particles
   real(wp), protected :: rho_TEP         ! (kg/m3)   Density of TEP particles
@@ -103,25 +103,25 @@ module mo_m4ago_HAMOCCinit
   ! Citical particle Reynolds number for fragmentation
   real(wp)            :: agg_Re_crit     ! (-)       Critical particle Reynolds number for fragmentation
 
-  ! Calculated model-specific parameters
-  real(wp), protected :: det_mol2mass ! mol detritus P/m^3 to kg POM /m^3 (according to stoichiometry)
-  real(wp), protected :: V_dp_dust,V_dp_det,V_dp_calc,V_dp_opal   ! volumes of primary particles (L^3)
-  real(wp), protected :: A_dp_dust,A_dp_det,A_dp_calc,A_dp_opal   ! surface areas of primary particles (L^2)
-  real(wp), protected :: stickiness_min, stickiness_max           ! minimum and maximum stickiness of primary particles
-  real(wp), protected :: rho_V_dp_dust,rho_V_dp_det,rho_V_dp_calc ! rho_V_dp_opal ! mass of primary particles (M)
-  real(wp), protected :: Rm_SiP                                   ! molar mass ratio opal (SiO_2) to POM
-  real(wp), protected :: thick_shell                              ! diatom frustule shell thickness (L)
-  real(wp), protected :: d_frustule_inner                         ! diameter of hollow part in diatom frustule (L)
-  real(wp), protected :: V_frustule_inner                         ! volume of hollow part in diatom frustule (L^3)
-  real(wp), protected :: V_frustule_opal                          ! volume of opal shell material (L^3)
-  real(wp), protected :: rho_V_frustule_opal                      ! mass of frustule material (M)
+  ! Calculated model-specific parameters - some include NUM_FAC
+  real(wp), protected :: det_mol2mass ! (kg/kmol detritus P) mol-weight of detritus (according to HAMOCC stoichiometry)
+  real(wp), protected :: V_dp_dust,V_dp_det,V_dp_calc,V_dp_opal   ! (m^3)*NUM_FAC  Volumes of primary particles
+  real(wp), protected :: A_dp_dust,A_dp_det,A_dp_calc,A_dp_opal   ! (m^2)*NUM_FAC  Surface areas of primary particles
+  real(wp), protected :: stickiness_min, stickiness_max           ! (-)            Minimum and maximum stickiness of primary particles
+  real(wp), protected :: rho_V_dp_dust,rho_V_dp_det,rho_V_dp_calc ! (kg)           Mass of primary particle types
+  real(wp), protected :: Rm_SiP                                   ! (kg Si/kg det) Molar mass ratio opal (SiO_2) to POM
+  real(wp), protected :: thick_shell                              ! (m)            Diatom frustule shell thickness
+  real(wp), protected :: d_frustule_inner                         ! (m)            Diameter of hollow part in diatom frustule
+  real(wp), protected :: V_frustule_inner                         ! (m^3)*NUM_FAC  Volume of hollow part in diatom frustule
+  real(wp), protected :: V_frustule_opal                          ! (m^3)*NUM_FAC  Volume of opal shell material
+  real(wp), protected :: rho_V_frustule_opal                      ! (kg)*NUM_FAC   Mass of frustule material
 
   real(wp), protected :: NUM_FAC  = 1e9_wp                        ! (-) Numerical factor to avoid numerical issues
 
   integer, protected  :: NPrimPartTypes = 4 ! Number of primary particle types generated from the biogeochemistry model
 
 contains
-
+  ! ------------------------------------------------------------------------------------------------
   subroutine init_m4ago_derived_params(ropal)
     !>
     !! Initilization of parameters
@@ -129,7 +129,7 @@ contains
 
     implicit none
 
-    real(wp), intent(in) :: ropal ! opal to phosporus production ratio
+    real(wp), intent(in) :: ropal ! (mol Si/mol P) Opal to phosporus production ratio
 
     ! Volume of an individual primary particle*NUMFAC
     V_dp_dust = ONE_SIXTH*PI*dp_dust**3*NUM_FAC
@@ -149,43 +149,59 @@ contains
     rho_V_dp_calc = V_dp_calc*rho_calc
 
     Rm_SiP              = ropal*opal_weight/det_mol2mass
-    ! shell thickness
+    ! Shell thickness
     thick_shell         = 0.5_wp*dp_opal*(1._wp - (rho_opal/(Rm_SiP*rho_det+rho_opal))**(1._wp/3._wp))
     d_frustule_inner    = dp_opal - 2._wp*thick_shell
-    ! volume of hollow part of frustule
+    ! Volume of hollow part of frustule * NUM_FAC
     V_frustule_inner    = ONE_SIXTH* PI*d_frustule_inner**3*NUM_FAC
-    ! volume of opal part of frustule
+    ! Volume of opal part of frustule * NUM_FAC
     V_frustule_opal     = ONE_SIXTH*PI*(dp_opal**3 - d_frustule_inner**3)*NUM_FAC
+    ! Mass of opal part of frustule * NUM_FAC
     rho_V_frustule_opal = V_frustule_opal*rho_opal
 
     ! Minimum and maximum reachable stickiness
     stickiness_min      = min(stickiness_TEP, stickiness_det, stickiness_opal, stickiness_calc, stickiness_dust)
     stickiness_max      = max(stickiness_TEP, stickiness_det, stickiness_opal, stickiness_calc, stickiness_dust)
 
+    ! Init core M4AGO parameters
+    call init_m4ago_core_parameters(agg_Re_crit,agg_df_min,agg_df_max,stickiness_min,stickiness_max)
+
   end subroutine init_m4ago_derived_params
 
-  subroutine init_m4ago_params(claydens,calcdens,calcwei,opaldens,opalwei,ropal,nmlfile)
+!  ! ------------------------------------------------------------------------------------------------
+!  subroutine reset_m4ago_nml_params()
+!  ! could be introduced and used to hard-reset parameters after init_m4ago_nml_params
+!  ! to enable setting of nml parameters directly through the driving OBGC model
+!  ! currently left blank
+!  implicit none
+!
+!  end subroutine
+
+  ! ------------------------------------------------------------------------------------------------
+  subroutine init_m4ago_nml_params(claydens,calcdens,calcwei,opaldens,opalwei,nmlfile)
     !>
     !! Initialization of (namelist) parameters
     !!
 
     implicit none
 
-    real(wp), intent(in) :: claydens  ! (kg/m3) Density of dust/clay
-    real(wp), intent(in) :: calcdens  ! (kg/m3) Density of CaCO3
+    real(wp), intent(in) :: claydens  ! (kg/m3)   Density of dust/clay
+    real(wp), intent(in) :: calcdens  ! (kg/m3)   Density of CaCO3
     real(wp), intent(in) :: calcwei   ! (kg/kmol) mol-weight of CaCO3
-    real(wp), intent(in) :: opaldens  ! (kg/m3) Density of opal
+    real(wp), intent(in) :: opaldens  ! (kg/m3)   Density of opal
     real(wp), intent(in) :: opalwei   ! (kg/kmol) mol-weight of opal
-    real(wp), intent(in) :: ropal     ! (mol Si/mol P) Silicate to phosphorus uptake ratio
     character(*),intent(in),optional :: nmlfile ! namelist file for M4AGO
 
     integer :: iounit
-    namelist /m4agoparams/ dp_dust,dp_det,dp_calc,dp_opal,agg_Re_crit
+    namelist /m4agoparams/ dp_dust,dp_det,dp_calc,dp_opal,rho_calc,rho_opal,rho_dust,rho_det,      &
+                           rho_TEP,agg_Re_crit,stickiness_det,stickiness_opal,stickiness_calc,     &
+                           stickiness_dust,stickiness_TEP,agg_df_min,agg_df_max,calc_weight,       &
+                           opal_weight
 
     ! Detritus mol-weight for HAMOCC stoichiometry:
     det_mol2mass   = 3166._wp  ! (kg/kmol) kmol detritus P/m^3 to kg POM /m^3 (according to stoichiometry)
 
-    ! Densities and weights of primary particles provided through HAMOCC
+    ! Densities and mol-weights of primary particles provided through HAMOCC
     rho_calc    = calcdens
     rho_opal    = opaldens
     rho_dust    = claydens
@@ -227,12 +243,6 @@ contains
       print*,'No namelist file for M4AGO provided - continue with default parameters for HAMOCC'
     endif
 
-    ! Init OBGC-specific parameters
-    call init_m4ago_derived_params(ropal)
-
-    ! Init core M4AGO parameters
-    call init_m4ago_core_parameters(agg_Re_crit,agg_df_min,agg_df_max,stickiness_min,stickiness_max)
-
-  end subroutine init_m4ago_params
+  end subroutine init_m4ago_nml_params
 
 end module mo_m4ago_HAMOCCinit
