@@ -180,6 +180,7 @@ contains
 
     ! Critical particle Reynolds number for limiting nr-distribution
     agg_Re_crit       = 20._wp
+    ! agg_Re_crit       = 12._wp ! aiming for reduced speeds in CLIMBER-X (but must keep > 10)
 
   end subroutine init_m4ago_nml_params
 
