@@ -18,14 +18,14 @@ includes = []
 # Add files to required sources to build the program
 sources += files('M4AGO_driver.F90',
                  'mo_driver_routines.f90',
-                 '../src/mo_m4ago_HAMOCCinit.F90',
-                 '../src/mo_m4ago_HAMOCCPrimPart.F90',
-		 '../src/mo_m4ago_core.f90',
-		 '../src/mo_m4ago_kind.F90',
-		 '../src/mo_m4ago_types.f90',
-		 '../src/mo_m4ago_params.f90',
-		 '../src/mo_m4ago_control.f90',
-		 '../src/mo_m4ago_physics.f90')
+                 '../../src/mo_m4ago_HAMOCCinit.F90',
+                 '../../src/mo_m4ago_HAMOCCPrimPart.F90',
+		 '../../src/mo_m4ago_core.f90',
+		 '../../src/mo_m4ago_kind.F90',
+		 '../../src/mo_m4ago_types.f90',
+		 '../../src/mo_m4ago_params.f90',
+		 '../../src/mo_m4ago_control.f90',
+		 '../../src/mo_m4ago_physics.f90')
 
 subdir('tests')
 
