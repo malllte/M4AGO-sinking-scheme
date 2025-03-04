@@ -318,6 +318,8 @@ contains
 
         if (wsagg(k) .lt. 0.0 .OR. wsagg(k)/dtb .gt. 530.0) then
           WRITE(*,*)'+++ WEIRD: aggregates rising / sinking faster than 530 m/day; aggregate speed [m/day] = ', wsagg(k)/dtb,' at k = ', k
+          WRITE(*,*) 'CC_det(k), CC_opal(k), CC_calc(k), CC_dust(k) = ', CC_det(k), CC_opal(k), CC_calc(k), CC_dust(k) 
+          WRITE(*,*) 'dtb, dtbgc = ', dtb, dtbgc
         endif
 
         xLmaxagg(k)    = aggs%dmax_agg       ! applied max. diameter
