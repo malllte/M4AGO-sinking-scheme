@@ -36,13 +36,13 @@
 !!
 !! -----------------------------------------------------------------------------
 !! -----------------------------------------------------------------------------
-!! @file mo_m4ago_physics.f90
+!! @file mo_m4ago_control.f90
 !! @brief Module for Marine Aggregates:
 !!        The Microstructure, Multiscale, Mechanistic, Marine Aggregates
 !!        in the Global Ocean (M4AGO) sinking scheme
 !!
-!! The mo_m4ago_physics module contains routines to calculate:
-!!      - molecular dynamic viscosity
+!! The mo_m4ago_control module contains control switches:
+!!      - currently none
 !!
 !! See:
 !! Maerz et al. 2020: Microstructure and composition of marine aggregates
@@ -58,61 +58,20 @@
 !! @author: joeran maerz (joeran.maerz@mpimet.mpg.de), MPI-M, HH
 !! 2019, June, revised by Irene Stemmler (refactoring, cleaning), MPI-M, HH
 !!
-!! 2024 packaged as individual module by joeran maerz, UiB, Bergen
-!!
+!! 2023 adopted to iHAMOCC by joeran maerz, UiB, Bergen
+!! 2024 packaged as individual module (initially for iHAMOCC) by joeran maerz, UiB, Bergen
 !! -----------------------------------------------------------------------------
 !! -----------------------------------------------------------------------------
 !!
 !!
 
-module mo_m4ago_physics
-
-  use control, only           : wp
-!  use mo_m4ago_kind, only: wp
+module mo_m4ago_control
 
   implicit none
 
-  private
+  public
 
-  public :: mol_dyn_vis
-
-contains
-
-  real(wp) function mol_dyn_vis(press_val,ptho_val,psao_val)
-    !-----------------------------------------------------------------------
-    !>
-    !! mol_dyn_vis calculates the molecular dynamic viscosity according to
-    !! Richards 1998: The effect of temperature, pressure, and salinity
-    !! on sound attenuation in turbid seawater. J. Acoust. Soc. Am. 103 (1),
-    !! originally published by  Matthaeus, W. (1972): Die Viskositaet des
-    !! Meerwassers. Beitraege zur Meereskunde, Heft 29 (in German).
-    !!
-    !! returns: molecular dynamic viscosity [kg/(m*s)]
-    !!
-    !! Valid range:
-    !! 0 degC < T < 30 degC, 0 < S < 36, and 1 dbar < p < 1000 dbar
-
-    real(wp), intent(in) :: press_val ! pressure [dbar]
-    real(wp), intent(in) :: ptho_val  ! temperature [deg C]
-    real(wp), intent(in) :: psao_val  ! salinity [psu]
-
-    mol_dyn_vis = 0.1_wp & ! Unit conversion: g / (cm*s) -> kg / (m*s)
-                      &     *(1.79e-2_wp                                                           &
-                      &     - 6.1299e-4_wp*ptho_val + 1.4467e-5_wp*ptho_val**2                     &
-                      &     - 1.6826e-7_wp*ptho_val**3                                             &
-                      &     - 1.8266e-7_wp*press_val  + 9.8972e-12_wp*press_val**2                 &
-                      &     + 2.4727e-5_wp*psao_val                                                &
-                      &     + psao_val*(4.8429e-7_wp*ptho_val - 4.7172e-8_wp*ptho_val**2           &
-                      &     + 7.5986e-10_wp*ptho_val**3)                                           &
-                      &     + press_val*(1.3817e-8_wp*ptho_val - 2.6363e-10_wp*ptho_val**2)        &
-                      &     - press_val**2 * (6.3255e-13_wp*ptho_val - 1.2116e-14_wp*ptho_val**2))
-
-    ! For extremely high temperatures, the formulation turns negative. We here introduce a minimum
-    ! value for the viscosity, that refers to ca. 10 dbar, 45 degC and 0 psu of the equation above
-    ! which would be ca.: 0.0004277485639235001 kg/(m*s)
-    mol_dyn_vis = max(0.00043_wp, mol_dyn_vis)
+  ! Currently no switches available
 
 
-  end function mol_dyn_vis
-
-end module mo_m4ago_physics
+end module mo_m4ago_control

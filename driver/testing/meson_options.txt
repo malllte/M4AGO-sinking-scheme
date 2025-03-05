@@ -1,0 +1,6 @@
+# Build configuration
+option('openmp', type: 'feature',
+       description: 'Enable OpenMP', value: 'auto')
+option('mpi', type: 'boolean',
+       description: 'Enable MPI work sharing', value: false)
+
