@@ -54,7 +54,7 @@
 !!
 module mo_m4ago_HAMOCCinit
 
-  use mo_m4ago_kind,    only: wp
+  use control,        only: wp
   use mo_m4ago_params,  only: rho_aq,ONE_SIXTH,PI
   use mo_m4ago_core,    only: init_m4ago_core_parameters
 

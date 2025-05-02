@@ -53,7 +53,7 @@
 !!
 module mo_m4ago_HAMOCCPrimPart
 
-  use mo_m4ago_kind,  only: wp
+  use control,  only: wp
   use mo_m4ago_types, only: aggregates, agg_environment
   use mo_m4ago_HAMOCCinit, only: NUM_FAC,det_mol2mass,NPrimPartTypes,                              &
                                  rho_det,rho_calc,calc_weight,rho_dust,opal_weight,rho_TEP,   &

@@ -68,7 +68,7 @@
 
 module mo_m4ago_types
 
-  use mo_m4ago_kind, only: wp
+  use control, only: wp
 
   implicit none
 
